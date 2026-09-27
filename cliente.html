@@ -16,6 +16,7 @@
         .stamp { width: 35px; height: 35px; border: 2px dashed #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
         .filled { background-color: #ffc107; border: none; } .hidden { display: none; }
         #reader { width: 100%; border: 2px dashed #007bff; padding: 10px; border-radius: 8px; margin-top: 10px;}
+        .expired { color: #dc3545; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -25,10 +26,12 @@
         <!-- Login / Registro -->
         <div id="authForm" class="card hidden">
             <h2>¡Bienvenido!</h2>
-            <p>Inicia sesión o regístrate para guardar tu progreso en la nube.</p>
+            <p>Inicia sesión o regístrate para guardar tu progreso.</p>
             <input type="text" id="clienteNombre" placeholder="Tu nombre (Solo para registrar)">
             <input type="email" id="clienteEmail" placeholder="Tu Email">
             <input type="password" id="clientePass" placeholder="Tu Contraseña">
+            <input type="tel" id="clienteTel" placeholder="Celular (Ej: 5212345678)">
+            <input type="date" id="clienteNac" title="Fecha de nacimiento">
             <button onclick="login()">Iniciar Sesión</button>
             <button class="btn-blue" onclick="registrar()">Crear Cuenta</button>
         </div>
@@ -50,10 +53,9 @@
         const urlParams = new URLSearchParams(window.location.search);
         const negocioId = urlParams.get('id');
         const premioIdURL = urlParams.get('premio');
-        const accion = urlParams.get('accion'); // 'sello' si viene de QR o NFC
+        const accion = urlParams.get('accion');
 
         let clienteId = null;
-        let nombreNegocio = "";
         let pinNegocio = "";
 
         window.onload = async function() {
@@ -61,9 +63,8 @@
             try {
                 const docSnap = await getDoc(doc(db, "negocios", negocioId));
                 if (docSnap.exists()) {
-                    nombreNegocio = docSnap.data().nombre;
+                    document.getElementById('negocioNombre').innerText = "📱 " + docSnap.data().nombre;
                     pinNegocio = docSnap.data().pin || "1234";
-                    document.getElementById('negocioNombre').innerText = "📱 " + nombreNegocio;
                 }
             } catch (e) { alert("Error al cargar negocio."); }
 
@@ -72,13 +73,8 @@
                     clienteId = user.uid;
                     document.getElementById('authForm').classList.add('hidden');
                     document.getElementById('walleView').classList.remove('hidden');
-                    
                     await cargarTarjetas();
-                    
-                    // Si viene de QR/NFC con acción sello
-                    if(accion === 'sello') {
-                        validarSello();
-                    }
+                    if(accion === 'sello') validarSello();
                 } else {
                     document.getElementById('authForm').classList.remove('hidden');
                     document.getElementById('walleView').classList.add('hidden');
@@ -97,10 +93,14 @@
             const nombre = document.getElementById('clienteNombre').value;
             const email = document.getElementById('clienteEmail').value;
             const pass = document.getElementById('clientePass').value;
-            if(!nombre || !email || !pass) return alert("Completa todos los campos.");
+            const tel = document.getElementById('clienteTel').value;
+            const nac = document.getElementById('clienteNac').value;
+            if(!nombre || !email || !pass || !tel || !nac) return alert("Completa todos los campos para registrar.");
             try {
                 const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                    await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { nombre, contacto: email });
+                await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { 
+                    nombre, contacto: email, telefono: tel, fechaNacimiento: nac 
+                });
             } catch(e) { alert("Error al registrar: " + e.message); }
         }
 
@@ -112,15 +112,23 @@
             const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
             if(premiosSnap.empty) { container.innerHTML = '<div class="card"><p>El negocio aún no tiene premios.</p></div>'; return; }
 
+            const hoy = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+
             for(const docSnap of premiosSnap.docs) {
                 const premio = docSnap.data(); const pId = docSnap.id;
                 const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                 const tarjetaSnap = await getDoc(tarjetaRef);
                 
                 let sellosActuales = 0;
-                if(tarjetaSnap.exists()) { sellosActuales = tarjetaSnap.data().sellos || 0; } 
-                else if(pId === premioIdURL) { sellosActuales = premio.sellosIniciales || 0; await setDoc(tarjetaRef, { sellos: sellosActuales }); } 
+                let tieneTarjeta = tarjetaSnap.exists();
+                
+                if(tieneTarjeta) { sellosActuales = tarjetaSnap.data().sellos || 0; } 
+                else if(pId === premioIdURL) { sellosActuales = premio.sellosIniciales || 0; await setDoc(tarjetaRef, { sellos: sellosActuales }); tieneTarjeta = true; } 
                 else { continue; }
+
+                // Revisar Vigencia
+                let expirado = false;
+                if(premio.vigenciaFin && hoy > premio.vigenciaFin) expirado = true;
 
                 let htmlStamps = '';
                 for(let i=0; i<premio.sellosRequeridos; i++) htmlStamps += i < sellosActuales ? '<div class="stamp filled">⭐</div>' : '<div class="stamp"></div>';
@@ -129,9 +137,10 @@
                 container.innerHTML += `
                     <div class="card">
                         <h2>${premio.nombre}</h2>
-                        <p>${completado ? '¡Premio listo! 🎉' : `Te faltan ${premio.sellosRequeridos - sellosActuales} sellos`}</p>
+                        ${expirado ? '<p class="expired">❌ Promoción expirada</p>' : (completado ? '<p>¡Premio listo! 🎉</p>' : `<p>Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p>`)}
                         <div class="stamps">${htmlStamps}</div>
-                        ${completado ? '<button onclick="reclamarPremio(\''+pId+'\')" class="btn-blue">Reclamar y Reiniciar</button>' : '<button onclick="validarSello(\''+pId+'\')">Sumar Sello</button>'}
+                        ${!expirado && completado ? '<button onclick="reclamarPremio(\''+pId+'\')" class="btn-blue">Reclamar y Reiniciar</button>' : ''}
+                        ${!expirado && !completado ? '<button onclick="validarSello(\''+pId+'\')">Sumar Sello</button>' : ''}
                     </div>
                 `;
             }
@@ -167,7 +176,7 @@
                 const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
                 for(const docSnap of premiosSnap.docs) {
                     const premio = docSnap.data(); const pId = docSnap.id;
-                    if(pIdForzado && pId !== pIdForzado) continue; // Si escanea QR para tarjeta específica
+                    if(pIdForzado && pId !== pIdForzado) continue;
 
                     const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                     const tarjetaSnap = await getDoc(tarjetaRef);
@@ -178,7 +187,6 @@
                         cargarTarjetas(); return;
                     }
                 }
-                // Si llega aquí y no tenía tarjeta, pero escaneó QR global
                 if(!pIdForzado) alert("Escanea el enlace de un premio primero para activarlo.");
             } catch(e) { alert("Error al sumar sello."); }
         }
