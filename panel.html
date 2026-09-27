@@ -75,7 +75,7 @@
                 }
 
                 // Generar el link del cliente
-                const baseUrl = window.location.href.replace('panel.html', '');
+                const baseUrl = window.location.href.split('?')[0].replace('panel.html', '');
                 document.getElementById('linkCliente').value = `${baseUrl}cliente.html?id=${negocioId}`;
 
                 // Cargar clientes (lo dejamos preparado para el próximo paso)
