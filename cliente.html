@@ -71,6 +71,16 @@
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     clienteId = user.uid;
+                    // Verificar si el perfil del cliente existe en Firestore
+                    const clienteSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
+                    
+                    if (!clienteSnap.exists()) {
+                        // Si fue borrado por el negocio pero sigue con sesión iniciada, lo volvemos a crear pidiendo datos
+                        alert("Tu cuenta fue eliminada por el negocio. Por favor regístrate nuevamente.");
+                        await signOut(auth);
+                        return;
+                    }
+
                     document.getElementById('authForm').classList.add('hidden');
                     document.getElementById('walleView').classList.remove('hidden');
                     await cargarTarjetas();
@@ -85,8 +95,9 @@
         window.login = async function() {
             const email = document.getElementById('clienteEmail').value;
             const pass = document.getElementById('clientePass').value;
-            try { await signInWithEmailAndPassword(auth, email, pass); } 
-            catch(e) { alert("Error al iniciar sesión: " + e.message); }
+            try { 
+                await signInWithEmailAndPassword(auth, email, pass); 
+            } catch(e) { alert("Error al iniciar sesión: " + e.message); }
         }
 
         window.registrar = async function() {
@@ -101,7 +112,13 @@
                 await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { 
                     nombre, contacto: email, telefono: tel, fechaNacimiento: nac 
                 });
-            } catch(e) { alert("Error al registrar: " + e.message); }
+            } catch(e) {
+                if(e.code === 'auth/email-already-in-use') {
+                    alert("Este correo ya está registrado. Inicia sesión con tu contraseña.");
+                } else {
+                    alert("Error: " + e.message);
+                }
+            }
         }
 
         window.cerrarSesion = async function() { await signOut(auth); }
@@ -112,7 +129,7 @@
             const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
             if(premiosSnap.empty) { container.innerHTML = '<div class="card"><p>El negocio aún no tiene premios.</p></div>'; return; }
 
-            const hoy = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            const hoy = new Date().toISOString().split('T')[0];
 
             for(const docSnap of premiosSnap.docs) {
                 const premio = docSnap.data(); const pId = docSnap.id;
@@ -126,7 +143,6 @@
                 else if(pId === premioIdURL) { sellosActuales = premio.sellosIniciales || 0; await setDoc(tarjetaRef, { sellos: sellosActuales }); tieneTarjeta = true; } 
                 else { continue; }
 
-                // Revisar Vigencia
                 let expirado = false;
                 if(premio.vigenciaFin && hoy > premio.vigenciaFin) expirado = true;
 
