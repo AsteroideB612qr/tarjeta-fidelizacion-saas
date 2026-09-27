@@ -13,8 +13,6 @@
         button:hover { background-color: #0056b3; }
         .btn-danger { background-color: #dc3545; padding: 5px 10px; font-size: 12px; }
         .info-box { background: #e7f3ff; padding: 15px; border-radius: 5px; margin-top: 20px; text-align: center; }
-        .premio-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; background: #f9f9f9; padding: 10px; border-radius: 5px;}
-        .premio-row input { margin: 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
@@ -25,13 +23,13 @@
         <h1 id="tituloNegocio">Cargando panel...</h1>
         
         <h2>Configuración de Seguridad</h2>
-        <label>PIN del Cajero (El cliente escaneará un QR y el cajero pondrá este PIN en el celular del cliente sin tocarlo):</label>
+        <label>PIN del Cajero (Requerido para validar sellos):</label>
         <input type="number" id="pinSecreto" placeholder="Ej: 1234" style="width: 200px;">
         <button onclick="guardarPin()">Guardar PIN</button>
 
         <div class="info-box">
-            <h2>Código QR del Negocio</h2>
-            <p>Muestra este código en tu mostrador. El cliente lo escaneará con su celular para sumar sellos.</p>
+            <h2>Código QR de Mostrador (Para sumar sellos)</h2>
+            <p>El cliente escaneará este QR desde su app para sumar un sello.</p>
             <img id="qrImagen" src="" alt="Código QR" style="width: 200px; height: 200px; margin: auto;">
         </div>
 
@@ -39,29 +37,20 @@
         <div style="display:flex; gap:10px; flex-wrap: wrap;">
             <input type="text" id="premioNombre" placeholder="Nombre del premio (Ej: Café Gratis)" style="flex:2;">
             <input type="number" id="premioSellos" placeholder="Sellos totales (Ej: 5)" style="flex:1;" min="1">
-            <input type="number" id="premioIniciales" placeholder="Sellos iniciales (Ej: 1)" style="flex:1;" min="0" value="0">
+            <input type="number" id="premioIniciales" placeholder="Iniciales (Ej: 1)" style="flex:1;" min="0" value="0">
         </div>
         <button onclick="crearPremio()" style="margin-top:10px; width:100%;">Añadir Premio</button>
 
         <h2>Premios Activos y Enlaces</h2>
         <table>
             <thead>
-                <tr>
-                    <th>Premio</th>
-                    <th>Avance</th>
-                    <th>Enlace para el Cliente (Carga automática)</th>
-                    <th>Acción</th>
-                </tr>
+                <tr><th>Premio</th><th>Avance</th><th>Enlace (Compartir para activar tarjeta)</th><th>Acción</th></tr>
             </thead>
-            <tbody id="tablaPremios">
-                <tr><td colspan="4">Cargando premios...</td></tr>
-            </tbody>
+            <tbody id="tablaPremios"><tr><td colspan="4">Cargando...</td></tr></tbody>
         </table>
 
         <h2>Clientes Registrados</h2>
-        <div id="listaClientes" style="background:#f9f9f9; padding:10px; border-radius:5px;">
-            <p>Cargando clientes...</p>
-        </div>
+        <div id="listaClientes" style="background:#f9f9f9; padding:10px; border-radius:5px;"><p>Cargando...</p></div>
     </div>
 
     <script type="module">
@@ -83,10 +72,9 @@
                     const pinGuardado = docSnap.data().pin;
                     if(pinGuardado) document.getElementById('pinSecreto').value = pinGuardado;
                 }
-                
-                // Generar QR estático que apunta a la wallet del cliente
-                const clienteUrl = `${baseUrl}cliente.html?id=${negocioId}`;
-                document.getElementById('qrImagen').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(clienteUrl)}`;
+                // QR Específico para sumar sello
+                const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello`;
+                document.getElementById('qrImagen').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(selloUrl)}`;
                 
                 cargarPremios();
                 cargarClientes();
@@ -104,51 +92,27 @@
             const nombre = document.getElementById('premioNombre').value;
             const sellos = parseInt(document.getElementById('premioSellos').value);
             const iniciales = parseInt(document.getElementById('premioIniciales').value) || 0;
-            
             if(!nombre || !sellos) return alert("Completa nombre y sellos totales.");
-
             try {
-                await addDoc(collection(db, "negocios", negocioId, "premios"), {
-                    nombre: nombre,
-                    sellosRequeridos: sellos,
-                    sellosIniciales: iniciales
-                });
-                document.getElementById('premioNombre').value = '';
-                document.getElementById('premioSellos').value = '';
-                document.getElementById('premioIniciales').value = '0';
+                await addDoc(collection(db, "negocios", negocioId, "premios"), { nombre, sellosRequeridos: sellos, sellosIniciales: iniciales });
+                document.getElementById('premioNombre').value = ''; document.getElementById('premioSellos').value = ''; document.getElementById('premioIniciales').value = '0';
                 cargarPremios();
             } catch (e) { alert("Error al crear premio."); }
         }
 
         window.eliminarPremio = async function(id) {
-            if(confirm("¿Eliminar este premio?")) {
-                await deleteDoc(doc(db, "negocios", negocioId, "premios", id));
-                cargarPremios();
-            }
+            if(confirm("¿Eliminar este premio?")) { await deleteDoc(doc(db, "negocios", negocioId, "premios", id)); cargarPremios(); }
         }
 
         async function cargarPremios() {
             const tbody = document.getElementById('tablaPremios');
             tbody.innerHTML = '';
             const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "premios"));
-            
-            if(querySnapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="4">No hay premios creados.</td></tr>';
-                return;
-            }
-
+            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="4">No hay premios.</td></tr>'; return; }
             querySnapshot.forEach((docSnap) => {
                 const p = docSnap.data();
-                const id = docSnap.id;
-                const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${id}`;
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${p.nombre}</strong></td>
-                        <td>Inicia: ${p.sellosIniciales} / Total: ${p.sellosRequeridos}</td>
-                        <td><a href="${link}" target="_blank">${link}</a></td>
-                        <td><button class="btn-danger" onclick="eliminarPremio('${id}')">Eliminar</button></td>
-                    </tr>
-                `;
+                const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${docSnap.id}`;
+                tbody.innerHTML += `<tr><td><strong>${p.nombre}</strong></td><td>${p.sellosIniciales} / ${p.sellosRequeridos}</td><td><a href="${link}" target="_blank">${link}</a></td><td><button class="btn-danger" onclick="eliminarPremio('${docSnap.id}')">Eliminar</button></td></tr>`;
             });
         }
 
@@ -156,14 +120,8 @@
             const div = document.getElementById('listaClientes');
             div.innerHTML = '';
             const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
-            if(querySnapshot.empty) {
-                div.innerHTML = '<p>Aún no hay clientes registrados.</p>';
-                return;
-            }
-            querySnapshot.forEach((docSnap) => {
-                const c = docSnap.data();
-                div.innerHTML += `<p>👤 ${c.nombre} - ${c.contacto}</p>`;
-            });
+            if(querySnapshot.empty) { div.innerHTML = '<p>Aún no hay clientes.</p>'; return; }
+            querySnapshot.forEach((docSnap) => { const c = docSnap.data(); div.innerHTML += `<p>👤 ${c.nombre} - ${c.contacto}</p>`; });
         }
     </script>
 </body>
