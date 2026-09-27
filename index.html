@@ -12,16 +12,18 @@
         input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; color: white; }
         button:hover { background-color: #0056b3; }
+        .btn-danger { background-color: #dc3545; padding: 5px 10px; font-size: 12px; }
+        .btn-danger:hover { background-color: #c82333; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #f8f9fa; }
-        a { color: #007bff; text-decoration: none; }
+        a { color: #007bff; text-decoration: none; word-break: break-all; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🚀 Panel de Administración SaaS</h1>
-        <p>Bienvenido. Aquí puedes registrar nuevos negocios para que usen tu plataforma.</p>
+        <p>Aquí puedes registrar y gestionar los negocios que usan tu plataforma.</p>
 
         <h2>Crear Nuevo Negocio</h2>
         <div class="form-group">
@@ -35,7 +37,7 @@
                 <tr>
                     <th>Nombre del Negocio</th>
                     <th>Enlace del Panel (Para el dueño)</th>
-                    <th>Estado</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaNegocios">
@@ -46,31 +48,38 @@
 
     <script type="module">
         import { db } from "./firebase.js";
-        import { collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         window.crearNegocio = async function() {
             const nombre = document.getElementById('nombreNegocio').value;
             if(!nombre) return alert("Por favor ingresa un nombre");
 
             try {
-                // Creamos el negocio en Firebase
-                const docRef = await addDoc(collection(db, "negocios"), {
+                await addDoc(collection(db, "negocios"), {
                     nombre: nombre,
                     creadoEn: new Date()
                 });
-                
                 document.getElementById('nombreNegocio').value = '';
-                alert("Negocio creado con éxito!");
-                cargarNegocios(); // Actualizar la tabla
+                cargarNegocios();
             } catch (e) {
                 alert("Error al crear: " + e.message);
+            }
+        }
+
+        window.eliminarNegocio = async function(id, nombre) {
+            if(confirm(`¿Seguro que quieres eliminar a ${nombre}? Se borrarán todos sus datos, premios y clientes.`)) {
+                try {
+                    await deleteDoc(doc(db, "negocios", id));
+                    cargarNegocios();
+                } catch (e) {
+                    alert("Error al eliminar.");
+                }
             }
         }
 
         async function cargarNegocios() {
             const tbody = document.getElementById('tablaNegocios');
             tbody.innerHTML = '';
-            
             const q = query(collection(db, "negocios"), orderBy("creadoEn", "desc"));
             const querySnapshot = await getDocs(q);
 
@@ -81,23 +90,21 @@
 
             const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
 
-            querySnapshot.forEach((doc) => {
-                const negocio = doc.data();
-                const id = doc.id;
-                // Generamos el enlace único para este negocio
+            querySnapshot.forEach((docSnap) => {
+                const negocio = docSnap.data();
+                const id = docSnap.id;
                 const linkPanel = `${baseUrl}panel.html?id=${id}`;
                 
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>${negocio.nombre}</strong></td>
                         <td><a href="${linkPanel}" target="_blank">${linkPanel}</a></td>
-                        <td>Activo</td>
+                        <td><button class="btn-danger" onclick="eliminarNegocio('${id}', '${negocio.nombre}')">Eliminar</button></td>
                     </tr>
                 `;
             });
         }
 
-        // Cargar al iniciar la página
         cargarNegocios();
     </script>
 </body>
