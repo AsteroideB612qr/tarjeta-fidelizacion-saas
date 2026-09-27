@@ -40,71 +40,87 @@
         </div>
     </div>
 
-    <script>
-        window.onload = function() {
-            const config = JSON.parse(localStorage.getItem('configNegocio'));
-            if(config) {
-                document.getElementById('negocioNombre').innerText = config.nombre;
-                document.getElementById('premioTexto').innerText = config.premio;
-            } else {
-                document.getElementById('negocioNombre').innerText = "Negocio no configurado";
-            }
+    <script type="module">
+        import { db } from "./firebase.js";
+        import { doc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-            // Revisar si el cliente ya está registrado en este dispositivo
-            const cliente = JSON.parse(localStorage.getItem('clienteActual'));
-            if(cliente) {
-                mostrarTarjeta(cliente, config);
+        // 1. Obtener el ID del negocio desde la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const negocioId = urlParams.get('id');
+
+        let configNegocio = null;
+
+        // 2. Cargar datos del negocio
+        window.onload = async function() {
+            if (!negocioId) return alert("Enlace inválido.");
+
+            try {
+                const docRef = doc(db, "negocios", negocioId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('negocioNombre').innerText = data.nombre;
+                    configNegocio = data.config;
+                    
+                    if (configNegocio) {
+                        document.getElementById('premioTexto').innerText = configNegocio.premio;
+                    } else {
+                        alert("El negocio aún no ha configurado su tarjeta. Vuelve más tarde.");
+                    }
+                } else {
+                    document.getElementById('negocioNombre').innerText = "Negocio no encontrado";
+                }
+            } catch (e) {
+                alert("Error: " + e.message);
             }
         };
 
-        function registrarCliente() {
+        // 3. Registrar cliente en Firebase
+        window.registrarCliente = async function() {
             const nombre = document.getElementById('clienteNombre').value;
             const contacto = document.getElementById('clienteContacto').value;
             
-            if(!nombre || !contacto) {
-                alert("Por favor completa tu nombre y contacto.");
-                return;
+            if(!nombre || !contacto) return alert("Por favor completa tus datos.");
+
+            try {
+                // Guardamos al cliente dentro de la subcolección 'clientes' del negocio
+                const clientesRef = collection(db, "negocios", negocioId, "clientes");
+                const nuevoClienteRef = await addDoc(clientesRef, {
+                    nombre: nombre,
+                    contacto: contacto,
+                    sellos: 0,
+                    creadoEn: new Date()
+                });
+
+                // Guardamos el ID del cliente localmente para no pedirle que se registre de nuevo
+                localStorage.setItem('clienteId_' + negocioId, nuevoClienteRef.id);
+                
+                mostrarTarjeta(0, nombre);
+            } catch (e) {
+                alert("Error al registrar: " + e.message);
             }
-
-            const config = JSON.parse(localStorage.getItem('configNegocio'));
-            const nuevoCliente = {
-                nombre: nombre,
-                contacto: contacto,
-                sellos: 0
-            };
-
-            // Guardar cliente localmente
-            localStorage.setItem('clienteActual', JSON.stringify(nuevoCliente));
-
-            // Guardar en la "base de datos" del comercio (simulado)
-            let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-            clientes.push(nuevoCliente);
-            localStorage.setItem('clientes', JSON.stringify(clientes));
-
-            mostrarTarjeta(nuevoCliente, config);
         }
 
-        function mostrarTarjeta(cliente, config) {
+        // 4. Mostrar tarjeta visual
+        function mostrarTarjeta(sellosActuales, nombre) {
             document.getElementById('registroForm').classList.add('hidden');
             document.getElementById('tarjetaDigital').classList.remove('hidden');
-            document.getElementById('saludoNombre').innerText = cliente.nombre;
+            document.getElementById('saludoNombre').innerText = nombre;
             
-            actualizarSellos(cliente, config);
-        }
-
-        function actualizarSellos(cliente, config) {
             const contenedor = document.getElementById('contenedorSellos');
             contenedor.innerHTML = '';
             
-            for(let i = 0; i < config.sellos; i++) {
-                if(i < cliente.sellos) {
+            const totalSellos = configNegocio.sellos;
+            for(let i = 0; i < totalSellos; i++) {
+                if(i < sellosActuales) {
                     contenedor.innerHTML += '<div class="stamp filled">⭐</div>';
                 } else {
                     contenedor.innerHTML += '<div class="stamp"></div>';
                 }
             }
 
-            const restantes = config.sellos - cliente.sellos;
+            const restantes = totalSellos - sellosActuales;
             document.getElementById('sellosRestantes').innerText = restantes;
         }
     </script>
