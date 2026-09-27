@@ -3,180 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tarjeta de Fidelización</title>
+    <title>Mi Billetera</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .card-container { max-width: 400px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
-        h1 { color: #333; font-size: 24px; }
-        input { padding: 10px; margin: 10px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .container { max-width: 400px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        h1 { font-size: 22px; color: #333; } h2 { font-size: 18px; color: #007bff; margin-top: 0; }
+        input { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px; width: 100%; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
-        button:hover { opacity: 0.9; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .stamp-btn { background-color: #ffc107; color: black; }
-        .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 20px 0; }
-        .stamp { width: 50px; height: 50px; border: 2px dashed #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-        .filled { background-color: #ffc107; border: none; }
-        .hidden { display: none; }
-        .premio-listo { background-color: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-top: 10px; font-weight: bold; }
+        button:hover { opacity: 0.9; } button.btn-blue { background-color: #007bff; } button.btn-gray { background-color: #6c757d; }
+        .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 15px 0; }
+        .stamp { width: 35px; height: 35px; border: 2px dashed #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .filled { background-color: #ffc107; border: none; } .hidden { display: none; }
+        #reader { width: 100%; border: 2px dashed #007bff; padding: 10px; border-radius: 8px; margin-top: 10px;}
     </style>
 </head>
 <body>
-    <div class="card-container">
-        <h1 id="negocioNombre">Cargando...</h1>
-        
-        <!-- Formulario de Registro -->
-        <div id="registroForm">
-            <p>Para unirte al programa de recompensas, déjanos tus datos:</p>
-            <input type="text" id="clienteNombre" placeholder="Tu nombre">
-            <input type="text" id="clienteContacto" placeholder="Email o Teléfono">
-            <button onclick="registrarCliente()">Activar Mi Tarjeta</button>
+    <div class="container">
+        <h1 id="negocioNombre" style="text-align:center;">Cargando...</h1>
+
+        <!-- Login / Registro -->
+        <div id="authForm" class="card hidden">
+            <h2>¡Bienvenido!</h2>
+            <p>Inicia sesión o regístrate para guardar tu progreso en la nube.</p>
+            <input type="text" id="clienteNombre" placeholder="Tu nombre (Solo para registrar)">
+            <input type="email" id="clienteEmail" placeholder="Tu Email">
+            <input type="password" id="clientePass" placeholder="Tu Contraseña">
+            <button onclick="login()">Iniciar Sesión</button>
+            <button class="btn-blue" onclick="registrar()">Crear Cuenta</button>
         </div>
 
-        <!-- Tarjeta Digital (Oculta hasta registrarse) -->
-        <div id="tarjetaDigital" class="hidden">
-            <h2>¡Hola, <span id="saludoNombre"></span>!</h2>
-            <div id="mensajePremio" class="premio-listo hidden">¡Felicidades! Ya puedes reclamar tu premio: <span id="premioGanado"></span></div>
-            
-            <p>Te faltan <span id="sellosRestantes"></span> sellos para tu premio: <strong id="premioTexto"></strong></p>
-            <div class="stamps" id="contenedorSellos"></div>
-            
-            <button class="stamp-btn" id="btnSello" onclick="solicitarSello()">Solicitar Sello</button>
-            <p style="font-size: 12px; color: gray; margin-top:15px;">Entrega tu teléfono al cajero para validar el sello.</p>
+        <!-- Billetera -->
+        <div id="walleView" class="hidden">
+            <div id="tarjetasContainer"></div>
+            <div id="reader" class="hidden"></div>
+            <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px;">Cerrar Sesión</button>
         </div>
     </div>
 
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script type="module">
-        import { db } from "./firebase.js";
-        import { doc, getDoc, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { db, auth } from "./firebase.js";
+        import { doc, getDoc, collection, getDocs, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const urlParams = new URLSearchParams(window.location.search);
         const negocioId = urlParams.get('id');
+        const premioIdURL = urlParams.get('premio');
+        const accion = urlParams.get('accion'); // 'sello' si viene de QR o NFC
 
-        let configNegocio = null;
-        let clienteActualId = null;
-        let sellosActuales = 0;
+        let clienteId = null;
+        let nombreNegocio = "";
+        let pinNegocio = "";
 
         window.onload = async function() {
             if (!negocioId) return alert("Enlace inválido.");
-
             try {
-                const docRef = doc(db, "negocios", negocioId);
-                const docSnap = await getDoc(docRef);
-
+                const docSnap = await getDoc(doc(db, "negocios", negocioId));
                 if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    document.getElementById('negocioNombre').innerText = data.nombre;
-                    configNegocio = data.config;
+                    nombreNegocio = docSnap.data().nombre;
+                    pinNegocio = docSnap.data().pin || "1234";
+                    document.getElementById('negocioNombre').innerText = "📱 " + nombreNegocio;
+                }
+            } catch (e) { alert("Error al cargar negocio."); }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    clienteId = user.uid;
+                    document.getElementById('authForm').classList.add('hidden');
+                    document.getElementById('walleView').classList.remove('hidden');
                     
-                    if (configNegocio) {
-                        document.getElementById('premioTexto').innerText = configNegocio.premio;
-                        document.getElementById('premioGanado').innerText = configNegocio.premio;
+                    await cargarTarjetas();
+                    
+                    // Si viene de QR/NFC con acción sello
+                    if(accion === 'sello') {
+                        validarSello();
                     }
                 } else {
-                    document.getElementById('negocioNombre').innerText = "Negocio no encontrado";
+                    document.getElementById('authForm').classList.remove('hidden');
+                    document.getElementById('walleView').classList.add('hidden');
                 }
-
-                // Revisar si el cliente ya está registrado en este dispositivo
-                clienteActualId = localStorage.getItem('clienteId_' + negocioId);
-                if(clienteActualId) {
-                    await cargarDatosCliente(clienteActualId);
-                }
-            } catch (e) {
-                alert("Error al cargar datos.");
-            }
+            });
         };
 
-        window.registrarCliente = async function() {
+        window.login = async function() {
+            const email = document.getElementById('clienteEmail').value;
+            const pass = document.getElementById('clientePass').value;
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch(e) { alert("Error al iniciar sesión: " + e.message); }
+        }
+
+        window.registrar = async function() {
             const nombre = document.getElementById('clienteNombre').value;
-            const contacto = document.getElementById('clienteContacto').value;
-            
-            if(!nombre || !contacto) return alert("Por favor completa tus datos.");
-
+            const email = document.getElementById('clienteEmail').value;
+            const pass = document.getElementById('clientePass').value;
+            if(!nombre || !email || !pass) return alert("Completa todos los campos.");
             try {
-                const clientesRef = collection(db, "negocios", negocioId, "clientes");
-                const nuevoClienteRef = await addDoc(clientesRef, {
-                    nombre: nombre,
-                    contacto: contacto,
-                    sellos: 0,
-                    creadoEn: new Date()
-                });
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                    await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { nombre, contacto: email });
+            } catch(e) { alert("Error al registrar: " + e.message); }
+        }
 
-                clienteActualId = nuevoClienteRef.id;
-                localStorage.setItem('clienteId_' + negocioId, clienteActualId);
+        window.cerrarSesion = async function() { await signOut(auth); }
+
+        async function cargarTarjetas() {
+            const container = document.getElementById('tarjetasContainer');
+            container.innerHTML = '';
+            const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
+            if(premiosSnap.empty) { container.innerHTML = '<div class="card"><p>El negocio aún no tiene premios.</p></div>'; return; }
+
+            for(const docSnap of premiosSnap.docs) {
+                const premio = docSnap.data(); const pId = docSnap.id;
+                const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
+                const tarjetaSnap = await getDoc(tarjetaRef);
                 
-                mostrarTarjeta(0, nombre);
-            } catch (e) {
-                alert("Error al registrar.");
-            }
-        };
+                let sellosActuales = 0;
+                if(tarjetaSnap.exists()) { sellosActuales = tarjetaSnap.data().sellos || 0; } 
+                else if(pId === premioIdURL) { sellosActuales = premio.sellosIniciales || 0; await setDoc(tarjetaRef, { sellos: sellosActuales }); } 
+                else { continue; }
 
-        async function cargarDatosCliente(id) {
-            const clienteRef = doc(db, "negocios", negocioId, "clientes", id);
-            const clienteSnap = await getDoc(clienteRef);
-            
-            if(clienteSnap.exists()) {
-                const data = clienteSnap.data();
-                sellosActuales = data.sellos || 0;
-                mostrarTarjeta(sellosActuales, data.nombre);
+                let htmlStamps = '';
+                for(let i=0; i<premio.sellosRequeridos; i++) htmlStamps += i < sellosActuales ? '<div class="stamp filled">⭐</div>' : '<div class="stamp"></div>';
+                const completado = sellosActuales >= premio.sellosRequeridos;
+
+                container.innerHTML += `
+                    <div class="card">
+                        <h2>${premio.nombre}</h2>
+                        <p>${completado ? '¡Premio listo! 🎉' : `Te faltan ${premio.sellosRequeridos - sellosActuales} sellos`}</p>
+                        <div class="stamps">${htmlStamps}</div>
+                        ${completado ? '<button onclick="reclamarPremio(\''+pId+'\')" class="btn-blue">Reclamar y Reiniciar</button>' : '<button onclick="validarSello(\''+pId+'\')">Sumar Sello</button>'}
+                    </div>
+                `;
             }
         }
 
-        function mostrarTarjeta(sellos, nombre) {
-            document.getElementById('registroForm').classList.add('hidden');
-            document.getElementById('tarjetaDigital').classList.remove('hidden');
-            document.getElementById('saludoNombre').innerText = nombre;
-            
-            const contenedor = document.getElementById('contenedorSellos');
-            contenedor.innerHTML = '';
-            
-            const totalSellos = configNegocio.sellos;
-            for(let i = 0; i < totalSellos; i++) {
-                if(i < sellos) {
-                    contenedor.innerHTML += '<div class="stamp filled">⭐</div>';
-                } else {
-                    contenedor.innerHTML += '<div class="stamp"></div>';
+        window.validarSello = async function(pIdForzado) {
+            const metodo = prompt("¿Cómo deseas validar?\n1. Ingresar PIN\n2. Escanear QR\n\n(Escribe 1 o 2)");
+            if(metodo === "1") {
+                const pin = prompt("Cajero: Ingrese el PIN:");
+                if(pin === pinNegocio) { await sumarSello(pIdForzado); } else { alert("PIN incorrecto."); }
+            } else if(metodo === "2") {
+                iniciarEscaneoQR(pIdForzado);
+            } else {
+                alert("Método no válido.");
+            }
+        }
+
+        function iniciarEscaneoQR(pIdForzado) {
+            const readerElement = document.getElementById('reader');
+            readerElement.classList.remove('hidden');
+            const html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width: 200, height: 200} },
+                async (decodedText) => {
+                    html5QrCode.stop(); readerElement.classList.add('hidden');
+                    if(decodedText.includes(`id=${negocioId}&accion=sello`)) {
+                        alert("QR validado."); await sumarSello(pIdForzado);
+                    } else { alert("QR no pertenece a este negocio."); }
+                }, (err) => {}).catch(err => alert("Error al abrir cámara."));
+        }
+
+        async function sumarSello(pIdForzado) {
+            try {
+                const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
+                for(const docSnap of premiosSnap.docs) {
+                    const premio = docSnap.data(); const pId = docSnap.id;
+                    if(pIdForzado && pId !== pIdForzado) continue; // Si escanea QR para tarjeta específica
+
+                    const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
+                    const tarjetaSnap = await getDoc(tarjetaRef);
+                    
+                    if(tarjetaSnap.exists() && tarjetaSnap.data().sellos < premio.sellosRequeridos) {
+                        await updateDoc(tarjetaRef, { sellos: tarjetaSnap.data().sellos + 1 });
+                        alert("¡Sello agregado!");
+                        cargarTarjetas(); return;
+                    }
                 }
-            }
-
-            // Lógica de premio
-            if(sellos >= totalSellos) {
-                document.getElementById('sellosRestantes').innerText = "0";
-                document.getElementById('mensajePremio').classList.remove('hidden');
-                document.getElementById('btnSello').innerText = "Reclamar Premio y Reiniciar";
-            } else {
-                document.getElementById('sellosRestantes').innerText = totalSellos - sellos;
-                document.getElementById('mensajePremio').classList.add('hidden');
-                document.getElementById('btnSello').innerText = "Solicitar Sello";
-            }
+                // Si llega aquí y no tenía tarjeta, pero escaneó QR global
+                if(!pIdForzado) alert("Escanea el enlace de un premio primero para activarlo.");
+            } catch(e) { alert("Error al sumar sello."); }
         }
 
-        window.solicitarSello = async function() {
-            // Si ya alcanzó el premio, al presionar se reinicia a 0
-            if(sellosActuales >= configNegocio.sellos) {
-                await actualizarSellos(0);
-                return;
-            }
-
-            const pinIngresado = prompt("Cajero: Ingrese el PIN secreto para validar sello:");
-            if(pinIngresado === null) return; // Canceló
-            
-            if(pinIngresado === configNegocio.pin) {
-                await actualizarSellos(sellosActuales + 1);
-            } else {
-                alert("PIN incorrecto. No se puede agregar el sello.");
-            }
-        };
-
-        async function actualizarSellos(nuevoTotal) {
-            try {
-                const clienteRef = doc(db, "negocios", negocioId, "clientes", clienteActualId);
-                await updateDoc(clienteRef, { sellos: nuevoTotal });
-                
-                sellosActuales = nuevoTotal;
-                mostrarTarjeta(sellosActuales, document.getElementById('saludoNombre').innerText);
-            } catch(e) {
-                alert("Error al actualizar la tarjeta.");
-            }
+        window.reclamarPremio = async function(pId) {
+            const pin = prompt("Cajero: Ingrese el PIN para canjear:");
+            if(pin === pinNegocio) {
+                await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId), { sellos: 0 });
+                alert("¡Premio canjeado!"); cargarTarjetas();
+            } else { alert("PIN incorrecto."); }
         }
     </script>
 </body>
