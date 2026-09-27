@@ -11,13 +11,14 @@
         input, select { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; color: white; margin-top: 5px;}
         button:hover { background-color: #0056b3; }
-        .btn-danger { background-color: #dc3545; } .btn-wa { background-color: #25D366; }
+        .btn-danger { background-color: #dc3545; } .btn-wa { background-color: #25D366; } .btn-success { background-color: #28a745; }
         .info-box { background: #e7f3ff; padding: 15px; border-radius: 5px; margin-top: 20px; text-align: center; word-break: break-all; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
         th { background-color: #f2f2f2; }
         .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
         .form-row > div { flex: 1; min-width: 150px; }
+        .card-info { font-size: 12px; background: #f9f9f9; padding: 5px; border-radius: 4px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -26,16 +27,21 @@
         
         <h2>Seguridad y Puntos de Venta</h2>
         <div class="form-row">
-            <div><label>PIN Cajero:</label><input type="number" id="pinSecreto" placeholder="1234"></div>
+            <div><label>PIN Cajero (Para poner sellos):</label><input type="number" id="pinSecreto" placeholder="1234"></div>
             <div style="display:flex; align-items:flex-end;"><button onclick="guardarPin()">Guardar PIN</button></div>
         </div>
 
         <div class="info-box">
             <h2>Código QR y NFC (Sumar Sello)</h2>
-            <p>Muestra el QR o comparte este link para grabar en un tag NFC:</p>
             <img id="qrImagen" src="" alt="Código QR" style="width: 200px; height: 200px; margin: auto;">
             <p style="margin-top:10px; font-size:12px;"><strong>Link NFC:</strong> <span id="linkNfc"></span></p>
             <button onclick="copiarNfc()">Copiar Link NFC</button>
+        </div>
+
+        <h2>Validar Premio Canjeado</h2>
+        <div class="form-row">
+            <div style="flex:1;"><label>Código de Redención del Cliente:</label><input type="text" id="inputRedencion" placeholder="Ej: 4521"></div>
+            <div style="display:flex; align-items:flex-end;"><button class="btn-success" onclick="validarRedencion()">Canjear Premio</button></div>
         </div>
 
         <h2>Crear Premio (Con Vigencia - FOMO)</h2>
@@ -59,8 +65,8 @@
         <h2>Gestión de Clientes (CRM)</h2>
         <button onclick="descargarCSV()" style="background-color:#17a2b8; margin-bottom:10px;">Descargar Base de Datos (CSV)</button>
         <table>
-            <thead><tr><th>Nombre</th><th>Email</th><th>Celular</th><th>Cumpleaños</th><th>Enviar WhatsApp</th><th>Acción</th></tr></thead>
-            <tbody id="tablaClientes"><tr><td colspan="6">Cargando...</td></tr></tbody>
+            <thead><tr><th>Datos Cliente</th><th>Tarjetas Activas (Avance)</th><th>Enviar WhatsApp</th><th>Acción</th></tr></thead>
+            <tbody id="tablaClientes"><tr><td colspan="4">Cargando...</td></tr></tbody>
         </table>
     </div>
 
@@ -141,36 +147,102 @@
 
         async function cargarClientes() {
             const tbody = document.getElementById('tablaClientes');
-            tbody.innerHTML = '';
+            tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
             clientesData = [];
-            const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
-            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="6">Aún no hay clientes.</td></tr>'; return; }
             
-            querySnapshot.forEach((docSnap) => {
+            // Mapear premios para saber el nombre
+            const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
+            const premiosMap = {};
+            premiosSnap.forEach(d => premiosMap[d.id] = d.data());
+
+            const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
+            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="4">Aún no hay clientes.</td></tr>'; return; }
+            
+            tbody.innerHTML = '';
+            for (const docSnap of querySnapshot.docs) {
                 const c = docSnap.data();
                 const id = docSnap.id;
                 clientesData.push(c);
-                const waLink = c.telefono ? `https://wa.me/${c.telefono.replace(/[^0-9]/g, '')}` : '#';
                 
+                // Obtener tarjetas del cliente
+                const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
+                let tarjetasHtml = '<span style="color:#999;">Ninguna activa</span>';
+                
+                if (!tarjetasSnap.empty) {
+                    tarjetasHtml = '';
+                    tarjetasSnap.forEach(tDoc => {
+                        const t = tDoc.data();
+                        const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
+                        const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
+                        
+                        if(t.codigoRedencion) {
+                            tarjetasHtml += `<div class="card-info" style="color:#dc3545; font-weight:bold;">🏆 ${pNombre}: LISTO (Código: ${t.codigoRedencion})</div>`;
+                        } else {
+                            tarjetasHtml += `<div class="card-info">⭐ ${pNombre}: ${t.sellos || 0}/${pTotal}</div>`;
+                        }
+                    });
+                }
+
                 tbody.innerHTML += `
                     <tr>
-                        <td>${c.nombre}</td><td>${c.contacto}</td><td>${c.telefono || 'N/A'}</td><td>${c.fechaNacimiento || 'N/A'}</td>
-                        <td><input type="text" placeholder="Mensaje personalizado" id="msg-${id}" style="margin-bottom:5px;"><a href="${waLink}" target="_blank"><button class="btn-wa" style="width:100%;">WhatsApp</button></a></td>
+                        <td><strong>${c.nombre}</strong><br><small>${c.contacto}</small><br><small>📱 ${c.telefono || 'N/A'}</small><br><small>🎂 ${c.fechaNacimiento || 'N/A'}</small></td>
+                        <td>${tarjetasHtml}</td>
+                        <td><input type="text" placeholder="Mensaje..." id="msg-${id}" style="margin-bottom:5px;"><button class="btn-wa" style="width:100%;" onclick="enviarWhatsApp('${id}', '${c.telefono}')">WhatsApp</button></td>
                         <td><button class="btn-danger" onclick="eliminarCliente('${id}')">Eliminar</button></td>
                     </tr>
                 `;
-            });
+            }
+        }
+
+        window.enviarWhatsApp = function(id, telefono) {
+            if(!telefono) return alert("Este cliente no registró teléfono.");
+            const msg = document.getElementById('msg-'+id).value;
+            const cleanTel = telefono.replace(/[^0-9]/g, '');
+            // El truco para que pre-cargue el texto en WhatsApp Web
+            const url = `https://wa.me/${cleanTel}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+
+        window.validarRedencion = async function() {
+            const code = document.getElementById('inputRedencion').value.trim();
+            if(!code) return alert("Ingresa el código.");
+            
+            try {
+                // Buscar en todos los clientes si tienen ese código
+                const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
+                let encontrado = false;
+                
+                for (const docSnap of querySnapshot.docs) {
+                    const id = docSnap.id;
+                    const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
+                    
+                    for (const tDoc of tarjetasSnap.docs) {
+                        const t = tDoc.data();
+                        if(t.codigoRedencion === code) {
+                            // Encontrado! Borramos la tarjeta (desaparece de la billetera)
+                            await deleteDoc(doc(db, "negocios", negocioId, "clientes", id, "tarjetas", tDoc.id));
+                            alert("¡Premio canjeado con éxito! La tarjeta ha sido eliminada del cliente.");
+                            document.getElementById('inputRedencion').value = '';
+                            cargarClientes();
+                            return;
+                        }
+                    }
+                }
+                if(!encontrado) alert("Código no válido o ya canjeado.");
+            } catch(e) {
+                alert("Error al validar: " + e.message);
+            }
         }
 
         window.eliminarCliente = async function(id) {
-            if(confirm("¿Eliminar a este cliente? Se borrarán sus tarjetas y sellos.")) {
+            if(confirm("¿Eliminar a este cliente?")) {
                 await deleteDoc(doc(db, "negocios", negocioId, "clientes", id));
                 cargarClientes();
             }
         }
 
         window.descargarCSV = function() {
-            if(clientesData.length === 0) return alert("No hay clientes para descargar.");
+            if(clientesData.length === 0) return alert("No hay clientes.");
             let csv = "Nombre,Email,Telefono,FechaNacimiento\n";
             clientesData.forEach(c => {
                 csv += `${c.nombre},${c.contacto},${c.telefono || ''},${c.fechaNacimiento || ''}\n`;
@@ -178,7 +250,7 @@
             const blob = new Blob([csv], { type: 'text/csv' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'clientes_fidelidad.csv';
+            link.download = 'clientes.csv';
             link.click();
         }
     </script>
