@@ -17,6 +17,8 @@
         .filled { background-color: #ffc107; border: none; } .hidden { display: none; }
         #reader { width: 100%; border: 2px dashed #007bff; padding: 10px; border-radius: 8px; margin-top: 10px;}
         .expired { color: #dc3545; font-weight: bold; }
+        .vigencia { font-size: 12px; color: #6c757d; margin-top: 5px; }
+        .codigo-box { background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 24px; letter-spacing: 2px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -71,16 +73,12 @@
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     clienteId = user.uid;
-                    // Verificar si el perfil del cliente existe en Firestore
                     const clienteSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
-                    
                     if (!clienteSnap.exists()) {
-                        // Si fue borrado por el negocio pero sigue con sesión iniciada, lo volvemos a crear pidiendo datos
                         alert("Tu cuenta fue eliminada por el negocio. Por favor regístrate nuevamente.");
                         await signOut(auth);
                         return;
                     }
-
                     document.getElementById('authForm').classList.add('hidden');
                     document.getElementById('walleView').classList.remove('hidden');
                     await cargarTarjetas();
@@ -95,9 +93,8 @@
         window.login = async function() {
             const email = document.getElementById('clienteEmail').value;
             const pass = document.getElementById('clientePass').value;
-            try { 
-                await signInWithEmailAndPassword(auth, email, pass); 
-            } catch(e) { alert("Error al iniciar sesión: " + e.message); }
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch(e) { alert("Error al iniciar sesión: " + e.message); }
         }
 
         window.registrar = async function() {
@@ -115,9 +112,7 @@
             } catch(e) {
                 if(e.code === 'auth/email-already-in-use') {
                     alert("Este correo ya está registrado. Inicia sesión con tu contraseña.");
-                } else {
-                    alert("Error: " + e.message);
-                }
+                } else { alert("Error: " + e.message); }
             }
         }
 
@@ -136,12 +131,14 @@
                 const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                 const tarjetaSnap = await getDoc(tarjetaRef);
                 
-                let sellosActuales = 0;
-                let tieneTarjeta = tarjetaSnap.exists();
-                
-                if(tieneTarjeta) { sellosActuales = tarjetaSnap.data().sellos || 0; } 
-                else if(pId === premioIdURL) { sellosActuales = premio.sellosIniciales || 0; await setDoc(tarjetaRef, { sellos: sellosActuales }); tieneTarjeta = true; } 
-                else { continue; }
+                if(!tarjetaSnap.exists()) {
+                    if(pId === premioIdURL) { 
+                        await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }); 
+                    } else { continue; }
+                }
+
+                const tarjetaData = tarjetaSnap.exists() ? tarjetaSnap.data() : { sellos: premio.sellosIniciales || 0 };
+                let sellosActuales = tarjetaData.sellos || 0;
 
                 let expirado = false;
                 if(premio.vigenciaFin && hoy > premio.vigenciaFin) expirado = true;
@@ -150,13 +147,35 @@
                 for(let i=0; i<premio.sellosRequeridos; i++) htmlStamps += i < sellosActuales ? '<div class="stamp filled">⭐</div>' : '<div class="stamp"></div>';
                 const completado = sellosActuales >= premio.sellosRequeridos;
 
+                let accionHTML = '';
+                if (!expirado && completado && !tarjetaData.codigoRedencion) {
+                    // Generar código de redención de 4 dígitos
+                    const code = Math.floor(1000 + Math.random() * 9000).toString();
+                    await updateDoc(tarjetaRef, { codigoRedencion: code });
+                    tarjetaData.codigoRedencion = code; // Actualizar en memoria
+                }
+
+                if (expirado) {
+                    accionHTML = '<p class="expired">❌ Promoción expirada</p>';
+                } else if (completado) {
+                    accionHTML = `
+                        <p style="color:#28a745; font-weight:bold;">¡Felicidades! Canjea tu premio.</p>
+                        <div class="codigo-box">CÓDIGO: ${tarjetaData.codigoRedencion}</div>
+                        <p style="font-size:12px; margin-top:5px;">Muestra este código al cajero.</p>
+                    `;
+                } else {
+                    accionHTML = `
+                        <p>Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p>
+                        <button onclick="validarSello('${pId}')">Sumar Sello</button>
+                    `;
+                }
+
                 container.innerHTML += `
                     <div class="card">
                         <h2>${premio.nombre}</h2>
-                        ${expirado ? '<p class="expired">❌ Promoción expirada</p>' : (completado ? '<p>¡Premio listo! 🎉</p>' : `<p>Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p>`)}
                         <div class="stamps">${htmlStamps}</div>
-                        ${!expirado && completado ? '<button onclick="reclamarPremio(\''+pId+'\')" class="btn-blue">Reclamar y Reiniciar</button>' : ''}
-                        ${!expirado && !completado ? '<button onclick="validarSello(\''+pId+'\')">Sumar Sello</button>' : ''}
+                        <div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>
+                        ${accionHTML}
                     </div>
                 `;
             }
@@ -205,14 +224,6 @@
                 }
                 if(!pIdForzado) alert("Escanea el enlace de un premio primero para activarlo.");
             } catch(e) { alert("Error al sumar sello."); }
-        }
-
-        window.reclamarPremio = async function(pId) {
-            const pin = prompt("Cajero: Ingrese el PIN para canjear:");
-            if(pin === pinNegocio) {
-                await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId), { sellos: 0 });
-                alert("¡Premio canjeado!"); cargarTarjetas();
-            } else { alert("PIN incorrecto."); }
         }
     </script>
 </body>
