@@ -12,6 +12,9 @@
         button { padding: 10px; width: 100%; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
         button:hover { background-color: #0056b3; }
         .info-box { background: #e7f3ff; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
@@ -25,21 +28,32 @@
         <label>Descripción del premio:</label>
         <input type="text" id="premio" placeholder="Ej: Café Mediano Gratis">
         
+        <label>PIN secreto del cajero (para poner sellos):</label>
+        <input type="number" id="pinSecreto" placeholder="Ej: 1234">
+        
         <button onclick="guardarConfiguracion()">Guardar Configuración</button>
         <p id="config-msg" style="color: green; display:none; margin-top:10px;">¡Configuración guardada correctamente!</p>
 
         <div class="info-box">
-            <h2>Tu Enlace para Clientes</h2>
-            <p>Comparte este enlace o genéralo como código QR para tus clientes. Cuando lo abran, se registrarán y comenzarán a acumular sellos:</p>
+            <h2>Enlace para Clientes</h2>
+            <p>Comparte este enlace o genéralo como código QR para tus clientes. Al abrirlo, podrán registrarse y ver su tarjeta:</p>
             <input type="text" id="linkCliente" readonly>
             <button onclick="copiarLink()">Copiar Enlace</button>
         </div>
 
         <h2 style="margin-top:30px;">Clientes Registrados</h2>
-        <p>Aquí verás a los clientes que se hayan registrado con tu enlace:</p>
-        <div id="listaClientes" style="background:#f9f9f9; padding:10px; border-radius:5px;">
-            <p>Aún no hay clientes registrados.</p>
-        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Contacto</th>
+                    <th>Sellos</th>
+                </tr>
+            </thead>
+            <tbody id="tablaClientes">
+                <tr><td colspan="3">Cargando clientes...</td></tr>
+            </tbody>
+        </table>
     </div>
 
     <script type="module">
@@ -52,12 +66,12 @@
 
         if (!negocioId) {
             alert("Error: No se encontró el ID del negocio.");
-            window.location.href = "index.html"; // Redirigir al admin principal
+            window.location.href = "index.html"; 
         }
 
         const docRef = doc(db, "negocios", negocioId);
 
-        // 2. Cargar los datos actuales del negocio
+        // 2. Cargar los datos al iniciar
         window.onload = async function() {
             try {
                 const docSnap = await getDoc(docRef);
@@ -65,48 +79,48 @@
                     const data = docSnap.data();
                     document.getElementById('tituloNegocio').innerText = "Panel de: " + data.nombre;
                     
-                    // Si ya tiene configuración guardada, la mostramos en los inputs
                     if (data.config) {
                         document.getElementById('sellosRequeridos').value = data.config.sellos || '';
                         document.getElementById('premio').value = data.config.premio || '';
+                        document.getElementById('pinSecreto').value = data.config.pin || '';
                     }
                 } else {
                     alert("Negocio no encontrado en la base de datos.");
                 }
 
-                // Generar el link del cliente
-                const baseUrl = window.location.href.split('?')[0].replace('panel.html', '');
-                document.getElementById('linkCliente').value = `${baseUrl}cliente.html?id=${negocioId}`;
+                // Generar el link del cliente de forma segura
+                const currentUrl = window.location.href;
+                const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/')) + '/';
+                document.getElementById('linkCliente').value = baseUrl + "cliente.html?id=" + negocioId;
 
-                // Cargar clientes (lo dejamos preparado para el próximo paso)
                 cargarClientes();
             } catch (e) {
-                alert("Error al cargar datos: " + e.message);
+                console.error(e);
+                alert("Error al cargar datos.");
             }
         };
 
-        // 3. Guardar la configuración en Firebase
+        // 3. Guardar configuración
         window.guardarConfiguracion = async function() {
             const sellos = document.getElementById('sellosRequeridos').value;
             const premio = document.getElementById('premio').value;
+            const pin = document.getElementById('pinSecreto').value;
             
-            if(!sellos || !premio) return alert("Completa todos los campos.");
+            if(!sellos || !premio || !pin) return alert("Completa todos los campos.");
 
             try {
-                // Guardamos la configuración dentro del documento del negocio
                 await setDoc(docRef, {
                     config: {
                         sellos: parseInt(sellos),
-                        premio: premio
+                        premio: premio,
+                        pin: pin
                     }
-                }, { merge: true }); // merge: true para no borrar el nombre u otros datos
+                }, { merge: true }); 
                 
                 document.getElementById('config-msg').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('config-msg').style.display = 'none';
-                }, 3000);
+                setTimeout(() => document.getElementById('config-msg').style.display = 'none', 3000);
             } catch (e) {
-                alert("Error al guardar: " + e.message);
+                alert("Error al guardar.");
             }
         };
 
@@ -117,9 +131,27 @@
             alert('Enlace copiado!');
         };
 
-        // Función para cargar clientes (por ahora vacía, la llenaremos en el siguiente paso)
+        // 4. Cargar clientes en la tabla
         async function cargarClientes() {
-            // Próximamente conectaremos la lista de clientes aquí
+            const tbody = document.getElementById('tablaClientes');
+            tbody.innerHTML = '';
+            
+            try {
+                const clientesRef = collection(db, "negocios", negocioId, "clientes");
+                const querySnapshot = await getDocs(clientesRef);
+                
+                if(querySnapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="3">Aún no hay clientes registrados.</td></tr>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const c = doc.data();
+                    tbody.innerHTML += `<tr><td>${c.nombre}</td><td>${c.contacto}</td><td>${c.sellos || 0}</td></tr>`;
+                });
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="3">Error al cargar.</td></tr>';
+            }
         }
     </script>
 </body>
