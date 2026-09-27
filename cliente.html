@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarjeta de Fidelización</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .card-container { max-width: 400px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: #333; font-size: 24px; }
+        input { padding: 10px; margin: 10px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px; width: 100%; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background-color: #218838; }
+        .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 20px 0; }
+        .stamp { width: 50px; height: 50px; border: 2px dashed #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .filled { background-color: #ffc107; border: none; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="card-container">
+        <h1 id="negocioNombre">Cargando...</h1>
+        
+        <!-- Formulario de Registro -->
+        <div id="registroForm">
+            <p>Para unirte al programa de recompensas, déjanos tus datos:</p>
+            <input type="text" id="clienteNombre" placeholder="Tu nombre">
+            <input type="text" id="clienteContacto" placeholder="Email o Teléfono">
+            <button onclick="registrarCliente()">Activar Mi Tarjeta</button>
+        </div>
+
+        <!-- Tarjeta Digital (Oculta hasta registrarse) -->
+        <div id="tarjetaDigital" class="hidden">
+            <h2>¡Hola, <span id="saludoNombre"></span>!</h2>
+            <p>Te faltan <span id="sellosRestantes"></span> sellos para tu premio: <strong id="premioTexto"></strong></p>
+            <div class="stamps" id="contenedorSellos">
+                <!-- Los sellos se generarán aquí -->
+            </div>
+            <p style="font-size: 12px; color: gray;">Muestra esta pantalla al cajero para recibir tu sello.</p>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const config = JSON.parse(localStorage.getItem('configNegocio'));
+            if(config) {
+                document.getElementById('negocioNombre').innerText = config.nombre;
+                document.getElementById('premioTexto').innerText = config.premio;
+            } else {
+                document.getElementById('negocioNombre').innerText = "Negocio no configurado";
+            }
+
+            // Revisar si el cliente ya está registrado en este dispositivo
+            const cliente = JSON.parse(localStorage.getItem('clienteActual'));
+            if(cliente) {
+                mostrarTarjeta(cliente, config);
+            }
+        };
+
+        function registrarCliente() {
+            const nombre = document.getElementById('clienteNombre').value;
+            const contacto = document.getElementById('clienteContacto').value;
+            
+            if(!nombre || !contacto) {
+                alert("Por favor completa tu nombre y contacto.");
+                return;
+            }
+
+            const config = JSON.parse(localStorage.getItem('configNegocio'));
+            const nuevoCliente = {
+                nombre: nombre,
+                contacto: contacto,
+                sellos: 0
+            };
+
+            // Guardar cliente localmente
+            localStorage.setItem('clienteActual', JSON.stringify(nuevoCliente));
+
+            // Guardar en la "base de datos" del comercio (simulado)
+            let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+            clientes.push(nuevoCliente);
+            localStorage.setItem('clientes', JSON.stringify(clientes));
+
+            mostrarTarjeta(nuevoCliente, config);
+        }
+
+        function mostrarTarjeta(cliente, config) {
+            document.getElementById('registroForm').classList.add('hidden');
+            document.getElementById('tarjetaDigital').classList.remove('hidden');
+            document.getElementById('saludoNombre').innerText = cliente.nombre;
+            
+            actualizarSellos(cliente, config);
+        }
+
+        function actualizarSellos(cliente, config) {
+            const contenedor = document.getElementById('contenedorSellos');
+            contenedor.innerHTML = '';
+            
+            for(let i = 0; i < config.sellos; i++) {
+                if(i < cliente.sellos) {
+                    contenedor.innerHTML += '<div class="stamp filled">⭐</div>';
+                } else {
+                    contenedor.innerHTML += '<div class="stamp"></div>';
+                }
+            }
+
+            const restantes = config.sellos - cliente.sellos;
+            document.getElementById('sellosRestantes').innerText = restantes;
+        }
+    </script>
+</body>
+</html>
