@@ -10,11 +10,14 @@
         h1 { color: #333; font-size: 24px; }
         input { padding: 10px; margin: 10px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px; width: 100%; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
-        button:hover { background-color: #218838; }
+        button:hover { opacity: 0.9; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .stamp-btn { background-color: #ffc107; color: black; }
         .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 20px 0; }
         .stamp { width: 50px; height: 50px; border: 2px dashed #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
         .filled { background-color: #ffc107; border: none; }
         .hidden { display: none; }
+        .premio-listo { background-color: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -32,25 +35,27 @@
         <!-- Tarjeta Digital (Oculta hasta registrarse) -->
         <div id="tarjetaDigital" class="hidden">
             <h2>¡Hola, <span id="saludoNombre"></span>!</h2>
+            <div id="mensajePremio" class="premio-listo hidden">¡Felicidades! Ya puedes reclamar tu premio: <span id="premioGanado"></span></div>
+            
             <p>Te faltan <span id="sellosRestantes"></span> sellos para tu premio: <strong id="premioTexto"></strong></p>
-            <div class="stamps" id="contenedorSellos">
-                <!-- Los sellos se generarán aquí -->
-            </div>
-            <p style="font-size: 12px; color: gray;">Muestra esta pantalla al cajero para recibir tu sello.</p>
+            <div class="stamps" id="contenedorSellos"></div>
+            
+            <button class="stamp-btn" id="btnSello" onclick="solicitarSello()">Solicitar Sello</button>
+            <p style="font-size: 12px; color: gray; margin-top:15px;">Entrega tu teléfono al cajero para validar el sello.</p>
         </div>
     </div>
 
     <script type="module">
         import { db } from "./firebase.js";
-        import { doc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { doc, getDoc, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 1. Obtener el ID del negocio desde la URL
         const urlParams = new URLSearchParams(window.location.search);
         const negocioId = urlParams.get('id');
 
         let configNegocio = null;
+        let clienteActualId = null;
+        let sellosActuales = 0;
 
-        // 2. Cargar datos del negocio
         window.onload = async function() {
             if (!negocioId) return alert("Enlace inválido.");
 
@@ -65,18 +70,22 @@
                     
                     if (configNegocio) {
                         document.getElementById('premioTexto').innerText = configNegocio.premio;
-                    } else {
-                        alert("El negocio aún no ha configurado su tarjeta. Vuelve más tarde.");
+                        document.getElementById('premioGanado').innerText = configNegocio.premio;
                     }
                 } else {
                     document.getElementById('negocioNombre').innerText = "Negocio no encontrado";
                 }
+
+                // Revisar si el cliente ya está registrado en este dispositivo
+                clienteActualId = localStorage.getItem('clienteId_' + negocioId);
+                if(clienteActualId) {
+                    await cargarDatosCliente(clienteActualId);
+                }
             } catch (e) {
-                alert("Error: " + e.message);
+                alert("Error al cargar datos.");
             }
         };
 
-        // 3. Registrar cliente en Firebase
         window.registrarCliente = async function() {
             const nombre = document.getElementById('clienteNombre').value;
             const contacto = document.getElementById('clienteContacto').value;
@@ -84,7 +93,6 @@
             if(!nombre || !contacto) return alert("Por favor completa tus datos.");
 
             try {
-                // Guardamos al cliente dentro de la subcolección 'clientes' del negocio
                 const clientesRef = collection(db, "negocios", negocioId, "clientes");
                 const nuevoClienteRef = await addDoc(clientesRef, {
                     nombre: nombre,
@@ -93,17 +101,27 @@
                     creadoEn: new Date()
                 });
 
-                // Guardamos el ID del cliente localmente para no pedirle que se registre de nuevo
-                localStorage.setItem('clienteId_' + negocioId, nuevoClienteRef.id);
+                clienteActualId = nuevoClienteRef.id;
+                localStorage.setItem('clienteId_' + negocioId, clienteActualId);
                 
                 mostrarTarjeta(0, nombre);
             } catch (e) {
-                alert("Error al registrar: " + e.message);
+                alert("Error al registrar.");
+            }
+        };
+
+        async function cargarDatosCliente(id) {
+            const clienteRef = doc(db, "negocios", negocioId, "clientes", id);
+            const clienteSnap = await getDoc(clienteRef);
+            
+            if(clienteSnap.exists()) {
+                const data = clienteSnap.data();
+                sellosActuales = data.sellos || 0;
+                mostrarTarjeta(sellosActuales, data.nombre);
             }
         }
 
-        // 4. Mostrar tarjeta visual
-        function mostrarTarjeta(sellosActuales, nombre) {
+        function mostrarTarjeta(sellos, nombre) {
             document.getElementById('registroForm').classList.add('hidden');
             document.getElementById('tarjetaDigital').classList.remove('hidden');
             document.getElementById('saludoNombre').innerText = nombre;
@@ -113,15 +131,52 @@
             
             const totalSellos = configNegocio.sellos;
             for(let i = 0; i < totalSellos; i++) {
-                if(i < sellosActuales) {
+                if(i < sellos) {
                     contenedor.innerHTML += '<div class="stamp filled">⭐</div>';
                 } else {
                     contenedor.innerHTML += '<div class="stamp"></div>';
                 }
             }
 
-            const restantes = totalSellos - sellosActuales;
-            document.getElementById('sellosRestantes').innerText = restantes;
+            // Lógica de premio
+            if(sellos >= totalSellos) {
+                document.getElementById('sellosRestantes').innerText = "0";
+                document.getElementById('mensajePremio').classList.remove('hidden');
+                document.getElementById('btnSello').innerText = "Reclamar Premio y Reiniciar";
+            } else {
+                document.getElementById('sellosRestantes').innerText = totalSellos - sellos;
+                document.getElementById('mensajePremio').classList.add('hidden');
+                document.getElementById('btnSello').innerText = "Solicitar Sello";
+            }
+        }
+
+        window.solicitarSello = async function() {
+            // Si ya alcanzó el premio, al presionar se reinicia a 0
+            if(sellosActuales >= configNegocio.sellos) {
+                await actualizarSellos(0);
+                return;
+            }
+
+            const pinIngresado = prompt("Cajero: Ingrese el PIN secreto para validar sello:");
+            if(pinIngresado === null) return; // Canceló
+            
+            if(pinIngresado === configNegocio.pin) {
+                await actualizarSellos(sellosActuales + 1);
+            } else {
+                alert("PIN incorrecto. No se puede agregar el sello.");
+            }
+        };
+
+        async function actualizarSellos(nuevoTotal) {
+            try {
+                const clienteRef = doc(db, "negocios", negocioId, "clientes", clienteActualId);
+                await updateDoc(clienteRef, { sellos: nuevoTotal });
+                
+                sellosActuales = nuevoTotal;
+                mostrarTarjeta(sellosActuales, document.getElementById('saludoNombre').innerText);
+            } catch(e) {
+                alert("Error al actualizar la tarjeta.");
+            }
         }
     </script>
 </body>
