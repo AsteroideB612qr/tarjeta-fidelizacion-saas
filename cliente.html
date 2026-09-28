@@ -50,7 +50,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v3.0.0</span>
+        <span class="version-tag">v4.0.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -139,9 +139,19 @@
                     } else {
                         document.getElementById('completarPerfilForm').classList.add('hidden');
                         document.getElementById('walleView').classList.remove('hidden');
-                        renderHeader(); // Renderizar cabecera
+                        renderHeader(); 
                         await cargarTarjetas();
-                        if(accion === 'sello') { sumarSelloDirecto(); }
+                        
+                        // BLOQUEO ANTI-RECARGA: Solo sella si es la primera vez en esta sesión
+                        if(accion === 'sello') {
+                            const stampKey = 'stamped_' + negocioId;
+                            if(sessionStorage.getItem(stampKey) !== 'true') {
+                                sessionStorage.setItem(stampKey, 'true'); // Marcamos como sellado
+                                sumarSelloDirecto(); 
+                            } else {
+                                limpiarAccionURL(); // Si recarga, solo limpia la URL, no hace nada
+                            }
+                        }
                     }
                 } else {
                     document.getElementById('authForm').classList.remove('hidden');
