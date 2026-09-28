@@ -6,7 +6,7 @@
     <title>Panel Súper Admin - FidelidadPro</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1, h2 { color: #1a1a1a; }
         .form-group { display: flex; gap: 10px; margin-bottom: 20px; }
         input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
@@ -21,12 +21,13 @@
         a { color: #007bff; text-decoration: none; word-break: break-all; }
         .status-active { color: #28a745; font-weight: bold; }
         .status-expired { color: #dc3545; font-weight: bold; }
+        .stamp-code { background: #f8f9fa; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #333; display: inline-block; margin-bottom: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🚀 Panel de Administración SaaS</h1>
-        <p>Gestiona los negocios, suscripciones y cobros.</p>
+        <p>Gestiona los negocios, suscripciones y códigos NFC.</p>
 
         <h2>Crear Nuevo Negocio</h2>
         <div class="form-group">
@@ -40,12 +41,13 @@
                 <tr>
                     <th>Nombre</th>
                     <th>Enlace Panel</th>
+                    <th>Código NFC (Stamp)</th>
                     <th>Estado Suscripción</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaNegocios">
-                <tr><td colspan="4">Cargando...</td></tr>
+                <tr><td colspan="5">Cargando...</td></tr>
             </tbody>
         </table>
     </div>
@@ -58,7 +60,8 @@
             const nombre = document.getElementById('nombreNegocio').value;
             if(!nombre) return alert("Por favor ingresa un nombre");
             try {
-                await addDoc(collection(db, "negocios"), { nombre: nombre, creadoEn: new Date().getTime() });
+                const stampCode = "STAMP_" + Math.random().toString(36).substring(2, 8).toUpperCase();
+                await addDoc(collection(db, "negocios"), { nombre: nombre, creadoEn: new Date().getTime(), stampCode: stampCode });
                 document.getElementById('nombreNegocio').value = '';
                 cargarNegocios();
             } catch (e) { alert("Error al crear: " + e.message); }
@@ -79,35 +82,29 @@
             try {
                 const now = new Date();
                 let baseDate = now;
-                
-                // Si tiene vencimiento y aún no ha expirado, sumamos 30 días a esa fecha futura
-                if(currentVencimiento && currentVencimiento > now.getTime()) {
-                    baseDate = new Date(currentVencimiento);
-                }
-                
-                // Sumar 30 días a la fecha base
+                if(currentVencimiento && currentVencimiento > now.getTime()) baseDate = new Date(currentVencimiento);
                 baseDate.setDate(baseDate.getDate() + 30);
-                
                 await updateDoc(doc(db, "negocios", id), { fechaVencimiento: baseDate.getTime() });
                 alert("¡Suscripción extendida por 30 días!");
                 cargarNegocios();
-            } catch(e) { 
-                console.error(e);
-                alert("Error al extender."); 
+            } catch(e) { alert("Error al extender."); }
+        }
+
+        window.editarStamp = async function(id, current) {
+            const newStamp = prompt("Código del Tag NFC (texto plano):", current);
+            if(newStamp !== null && newStamp.trim() !== "") {
+                await updateDoc(doc(db, "negocios", id), { stampCode: newStamp.trim() });
+                alert("Actualizado. Recuerda regrabar los NFC físicos con este texto.");
+                cargarNegocios();
             }
         }
 
         async function cargarNegocios() {
             const tbody = document.getElementById('tablaNegocios');
-            tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
-            
+            tbody.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
             try {
                 const querySnapshot = await getDocs(collection(db, "negocios"));
-                
-                if(querySnapshot.empty) { 
-                    tbody.innerHTML = '<tr><td colspan="4">Aún no hay negocios.</td></tr>'; 
-                    return; 
-                }
+                if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="5">Aún no hay negocios.</td></tr>'; return; }
 
                 const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
                 tbody.innerHTML = '';
@@ -116,14 +113,12 @@
                     const negocio = docSnap.data();
                     const id = docSnap.id;
                     const linkPanel = `${baseUrl}panel.html?id=${id}`;
+                    const sCode = negocio.stampCode || 'STAMP_DEFAULT';
                     
-                    let estadoHtml = `<span class="status-expired">Vencido/Sin Pagar</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}', null)">Activar +30 días</button>`;
-                    
+                    let estadoHtml = `<span class="status-expired">Vencido</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}', null)">Activar +30 días</button>`;
                     if(negocio.fechaVencimiento) {
                         const fecha = new Date(negocio.fechaVencimiento);
-                        const now = new Date();
-                        
-                        if(fecha > now) {
+                        if(fecha > new Date()) {
                             estadoHtml = `<span class="status-active">Activo</span><br>Vence: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${negocio.fechaVencimiento})">Extender +30 días</button>`;
                         } else {
                             estadoHtml = `<span class="status-expired">Vencido</span><br>Venció: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${negocio.fechaVencimiento})">Reactivar +30 días</button>`;
@@ -134,17 +129,14 @@
                         <tr>
                             <td><strong>${negocio.nombre}</strong></td>
                             <td><a href="${linkPanel}" target="_blank">${linkPanel}</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar Link</button></td>
+                            <td><span class="stamp-code">${sCode}</span><br><button class="btn-copy" onclick="editarStamp('${id}', '${sCode}')">Editar</button></td>
                             <td>${estadoHtml}</td>
                             <td><button class="btn-danger" onclick="eliminarNegocio('${id}', '${negocio.nombre}')">Eliminar</button></td>
                         </tr>
                     `;
                 });
-            } catch(e) {
-                console.error(e);
-                tbody.innerHTML = '<tr><td colspan="4">Error al cargar los negocios.</td></tr>';
-            }
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="5">Error.</td></tr>'; }
         }
-        
         cargarNegocios();
     </script>
 </body>
