@@ -86,7 +86,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v7.1.0</span>
+        <span class="version-tag">v7.2.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -138,193 +138,193 @@
         const urlParams = new URLSearchParams(window.location.search);
         const negocioId = urlParams.get('id');
         const premioIdURL = urlParams.get('premio');
-        let accion = urlParams.get('accion'); 
+        const accion = urlParams.get('accion'); 
 
-        // Limpiar la URL inmediatamente si tiene 'accion' para evitar que se guarde en el acceso directo
+        // 1. REDIRECCIÓN OBLIGATORIA PARA ROMPER EL LOOP DE ACCESOS DIRECTOS
         if (accion === 'sello') {
-            history.replaceState(null, null, window.location.pathname + `?id=${negocioId}`);
+            sessionStorage.setItem('doStamp_' + negocioId, 'true');
+            const cleanUrl = window.location.origin + window.location.pathname + `?id=${negocioId}`;
+            window.location.replace(cleanUrl); // Redirige y limpia el historial
+        } else {
+            initApp();
         }
 
-        const baseUrl = window.location.origin + window.location.pathname.replace('cliente.html', '');
+        function initApp() {
+            const baseUrl = window.location.origin + window.location.pathname.replace('cliente.html', '');
+            let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
+            let isExpired = true, clientName = "";
 
-        let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
-        let isExpired = true, clientName = "";
+            // Iconos SVG Profesionales
+            const icons = {
+                ig: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E4405F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`,
+                tk: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#000000"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z"/></svg>`,
+                fb: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.45 2.89h-2.33v6.99A10 10 0 0 0 22 12z"/></svg>`,
+                mail: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`,
+                wa: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>`
+            };
 
-        // Iconos SVG Profesionales
-        const icons = {
-            ig: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E4405F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`,
-            tk: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#000000"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z"/></svg>`,
-            fb: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.45 2.89h-2.33v6.99A10 10 0 0 0 22 12z"/></svg>`,
-            mail: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`,
-            wa: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>`
-        };
-
-        window.onload = async function() {
-            if (!negocioId) return alert("Enlace inválido.");
-            try {
-                const docSnap = await getDoc(doc(db, "negocios", negocioId));
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    nombreNegocio = data.nombre;
-                    if(data.diseno) {
-                        logoUrl = data.diseno.logo || "";
-                        colorFondo = data.diseno.colorFondo || "#1a1a1a";
-                        colorSello = data.diseno.colorSello || "#ffc107";
-                        document.documentElement.style.setProperty('--primary-color', colorFondo);
-                        document.documentElement.style.setProperty('--stamp-color', colorSello);
-                    }
-                    if(data.redes) redes = data.redes;
-                    if(data.fechaVencimiento) { isExpired = new Date(data.fechaVencimiento) < new Date(); }
-                    
-                    // Configurar Icono de Acceso Directo (PWA Manifest Dinámico)
-                    if(logoUrl) {
-                        const manifest = {
-                            name: nombreNegocio, 
-                            short_name: (nombreNegocio || "Fidelidad").substring(0,12), 
-                            display: "standalone",
-                            background_color: "#ffffff", 
-                            theme_color: colorFondo,
-                            start_url: `${baseUrl}cliente.html?id=${negocioId}`, // URL LIMPIA SIN ACCION
-                            scope: `${baseUrl}cliente.html`,
-                            icons: [{ src: logoUrl, sizes: "512x512", type: "image/png", purpose: "any" }]
-                        };
-                        const stringManifest = JSON.stringify(manifest);
-                        const blob = new Blob([stringManifest], {type: 'application/json'});
-                        const manifestURL = URL.createObjectURL(blob);
-                        let mLink = document.querySelector('link[rel="manifest"]');
-                        if (!mLink) { mLink = document.createElement('link'); mLink.rel = 'manifest'; document.head.appendChild(mLink); }
-                        mLink.href = manifestURL;
+            window.onload = async function() {
+                if (!negocioId) return alert("Enlace inválido.");
+                try {
+                    const docSnap = await getDoc(doc(db, "negocios", negocioId));
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        nombreNegocio = data.nombre;
+                        if(data.diseno) {
+                            logoUrl = data.diseno.logo || "";
+                            colorFondo = data.diseno.colorFondo || "#1a1a1a";
+                            colorSello = data.diseno.colorSello || "#ffc107";
+                            document.documentElement.style.setProperty('--primary-color', colorFondo);
+                            document.documentElement.style.setProperty('--stamp-color', colorSello);
+                        }
+                        if(data.redes) redes = data.redes;
+                        if(data.fechaVencimiento) { isExpired = new Date(data.fechaVencimiento) < new Date(); }
                         
-                        let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
-                        if (!appleLink) { appleLink = document.createElement('link'); appleLink.rel = 'apple-touch-icon'; document.head.appendChild(appleLink); }
-                        appleLink.href = logoUrl;
-                    }
-                }
-            } catch (e) { alert("Error al cargar negocio."); }
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    clienteId = user.uid;
-                    document.getElementById('authForm').classList.add('hidden');
-                    const cSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
-                    if (!cSnap.exists()) {
-                        document.getElementById('negocioNombrePerfil').innerText = nombreNegocio;
-                        document.getElementById('completarPerfilForm').classList.remove('hidden');
-                    } else {
-                        clientName = cSnap.data().nombre;
-                        document.getElementById('completarPerfilForm').classList.add('hidden');
-                        document.getElementById('walleView').classList.remove('hidden');
-                        renderHeader(); 
-                        await cargarTarjetas();
-                        
-                        // Lógica anti-sello fantasma con 5 segundos de margen
-                        if(accion === 'sello' && !isExpired) {
-                            const lastStampTime = localStorage.getItem('lastStampTime_' + negocioId);
-                            const now = new Date().getTime();
-                            if (!lastStampTime || (now - lastStampTime > 5000)) {
-                                localStorage.setItem('lastStampTime_' + negocioId, now);
-                                sumarSelloDirecto(); 
-                            }
-                            accion = null; // Limpiar variable para que no se vuelva a ejecutar
+                        // Configurar Icono de Acceso Directo (PWA Manifest Dinámico)
+                        if(logoUrl) {
+                            const manifest = {
+                                name: nombreNegocio, 
+                                short_name: (nombreNegocio || "Fidelidad").substring(0,12), 
+                                display: "standalone",
+                                background_color: "#ffffff", 
+                                theme_color: colorFondo,
+                                start_url: `${baseUrl}cliente.html?id=${negocioId}`,
+                                scope: `${baseUrl}cliente.html`,
+                                icons: [{ src: logoUrl, sizes: "512x512", type: "image/png", purpose: "any" }]
+                            };
+                            const stringManifest = JSON.stringify(manifest);
+                            const blob = new Blob([stringManifest], {type: 'application/json'});
+                            const manifestURL = URL.createObjectURL(blob);
+                            let mLink = document.querySelector('link[rel="manifest"]');
+                            if (!mLink) { mLink = document.createElement('link'); mLink.rel = 'manifest'; document.head.appendChild(mLink); }
+                            mLink.href = manifestURL;
+                            
+                            let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
+                            if (!appleLink) { appleLink = document.createElement('link'); appleLink.rel = 'apple-touch-icon'; document.head.appendChild(appleLink); }
+                            appleLink.href = logoUrl;
                         }
                     }
-                } else {
-                    document.getElementById('authForm').classList.remove('hidden');
-                    document.getElementById('walleView').classList.add('hidden');
-                    mostrarLogin();
-                }
-            });
-        };
+                } catch (e) { alert("Error al cargar negocio."); }
 
-        function renderHeader() {
-            let socialsHtml = '';
-            if(redes.ig) socialsHtml += `<a href="${redes.ig}" target="_blank">${icons.ig}</a>`;
-            if(redes.tk) socialsHtml += `<a href="${redes.tk}" target="_blank">${icons.tk}</a>`;
-            if(redes.fb) socialsHtml += `<a href="${redes.fb}" target="_blank">${icons.fb}</a>`;
-            if(redes.mail) socialsHtml += `<a href="mailto:${redes.mail}" target="_blank">${icons.mail}</a>`;
-            if(redes.wa) socialsHtml += `<a href="https://wa.me/${redes.wa.replace(/[^0-9]/g,'')}" target="_blank">${icons.wa}</a>`;
-            
-            const headerHtml = `
-                ${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}
-                <h1 class="wallet-name">${nombreNegocio}</h1>
-                ${clientName ? `<div class="welcome-msg">¡Bienvenido, ${clientName}!</div>` : ''}
-                ${socialsHtml ? `<div class="socials-row">${socialsHtml}</div>` : ''}
-            `;
-            document.getElementById('walletHeader').innerHTML = headerHtml;
-        }
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        clienteId = user.uid;
+                        document.getElementById('authForm').classList.add('hidden');
+                        const cSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
+                        if (!cSnap.exists()) {
+                            document.getElementById('negocioNombrePerfil').innerText = nombreNegocio;
+                            document.getElementById('completarPerfilForm').classList.remove('hidden');
+                        } else {
+                            clientName = cSnap.data().nombre;
+                            document.getElementById('completarPerfilForm').classList.add('hidden');
+                            document.getElementById('walleView').classList.remove('hidden');
+                            renderHeader(); 
+                            await cargarTarjetas();
+                            
+                            // 2. EJECUTAR EL SELLO SI VIENE DE REDIRECCIÓN
+                            if (sessionStorage.getItem('doStamp_' + negocioId) === 'true' && !isExpired) {
+                                sessionStorage.removeItem('doStamp_' + negocioId);
+                                sumarSelloDirecto(); 
+                            }
+                        }
+                    } else {
+                        document.getElementById('authForm').classList.remove('hidden');
+                        document.getElementById('walleView').classList.add('hidden');
+                        mostrarLogin();
+                    }
+                });
+            };
 
-        window.mostrarLogin = function() { document.getElementById('tabLogin').classList.add('active'); document.getElementById('tabRegistro').classList.remove('active'); document.getElementById('loginBox').classList.remove('hidden'); document.getElementById('registerBox').classList.add('hidden'); }
-        window.mostrarRegistro = function() { document.getElementById('tabRegistro').classList.add('active'); document.getElementById('tabLogin').classList.remove('active'); document.getElementById('registerBox').classList.remove('hidden'); document.getElementById('loginBox').classList.add('hidden'); }
-        window.login = async function() { try { await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPass').value); } catch(e) { alert(e.message); } }
-        window.registrar = async function() { const n=document.getElementById('regNombre').value, e=document.getElementById('regEmail').value, p=document.getElementById('regPass').value, t=document.getElementById('regTel').value, na=document.getElementById('regNac').value; if(!n||!e||!p||!t||!na) return alert("Completa todo."); try { const c = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "negocios", negocioId, "clientes", c.user.uid), { nombre:n, contacto:e, telefono:t, fechaNacimiento:na }); } catch(err) { alert(err.message); } }
-        window.vincularNegocio = async function() { const n=document.getElementById('cpNombre').value, t=document.getElementById('cpTel').value, na=document.getElementById('cpNac').value; if(!n||!t||!na) return alert("Completa todo."); await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre:n, contacto:auth.currentUser.email, telefono:t, fechaNacimiento:na }); clientName=n; document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(accion==='sello') sumarSelloDirecto(); }
-        window.cerrarSesion = async function() { await signOut(auth); }
-
-        async function cargarTarjetas() {
-            const container = document.getElementById('tarjetasContainer');
-            container.innerHTML = '';
-            
-            if(isExpired) {
-                container.innerHTML = '<div class="auth-card"><h2>Promociones Pausadas</h2><p>El negocio está actualizando sus servicios. Vuelve pronto.</p></div>';
-                return;
-            }
-
-            const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
-            if(premiosSnap.empty) { container.innerHTML = '<div class="auth-card"><p>El negocio aún no tiene premios.</p></div>'; return; }
-
-            const hoy = new Date().toISOString().split('T')[0];
-
-            for(const docSnap of premiosSnap.docs) {
-                const premio = docSnap.data(); const pId = docSnap.id;
-                const tRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
-                const tSnap = await getDoc(tRef);
-                let tData = null;
-                if(!tSnap.exists() && pId === premioIdURL) { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); } 
-                else if (tSnap.exists()) tData = tSnap.data();
-                else if (premio.visibilidad === 'publico') { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); }
-                if (!tData) continue;
-
-                let sAct = tData.sellos || 0; let exp = (premio.vigenciaFin && hoy > premio.vigenciaFin); let cod = tData.codigoRedencion;
-                let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
-                let comp = sAct >= premio.sellosRequeridos;
-                if (!exp && comp && !cod) { cod = Math.floor(1000+Math.random()*9000).toString(); await updateDoc(tRef, { codigoRedencion: cod }, { merge: true }); }
+            function renderHeader() {
+                let socialsHtml = '';
+                if(redes.ig) socialsHtml += `<a href="${redes.ig}" target="_blank">${icons.ig}</a>`;
+                if(redes.tk) socialsHtml += `<a href="${redes.tk}" target="_blank">${icons.tk}</a>`;
+                if(redes.fb) socialsHtml += `<a href="${redes.fb}" target="_blank">${icons.fb}</a>`;
+                if(redes.mail) socialsHtml += `<a href="mailto:${redes.mail}" target="_blank">${icons.mail}</a>`;
+                if(redes.wa) socialsHtml += `<a href="https://wa.me/${redes.wa.replace(/[^0-9]/g,'')}" target="_blank">${icons.wa}</a>`;
                 
-                let aH = '';
-                if (exp) aH = '<p style="color:#ff6b6b; font-weight:bold;">❌ Promoción expirada</p>';
-                else if (comp) aH = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${cod || 'XXXX'}</div>`;
-                else aH = `<p style="font-size:14px; opacity:0.8;">Te faltan ${premio.sellosRequeridos - sAct} sellos</p><button class="btn-scan" onclick="iniciarEscaneoQR('${pId}')">Escanear para sumar Sello</button>`;
-
-                const vB = premio.visibilidad === 'publico' ? '<span class="badge-pub">Público</span>' : '';
-                container.innerHTML += `<div class="card-premium"><div class="card-body"><h2>${premio.nombre} ${vB}</h2><div class="stamps">${hS}</div><div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>${aH}</div></div>`;
+                const headerHtml = `
+                    ${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}
+                    <h1 class="wallet-name">${nombreNegocio}</h1>
+                    ${clientName ? `<div class="welcome-msg">¡Bienvenido, ${clientName}!</div>` : ''}
+                    ${socialsHtml ? `<div class="socials-row">${socialsHtml}</div>` : ''}
+                `;
+                document.getElementById('walletHeader').innerHTML = headerHtml;
             }
-        }
 
-        async function sumarSelloDirecto() {
-            if(isExpired) return;
-            const pS = await getDocs(collection(db, "negocios", negocioId, "premios")); let aC = [];
-            for(const d of pS.docs) { const p=d.data(), pId=d.id; const tS=await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId)); let s=0, hR=false; if(tS.exists()) { s=tS.data().sellos||0; hR=!!tS.data().codigoRedencion; } else if(p.visibilidad==='publico') s=p.sellosIniciales||0; else continue; if(s<p.sellosRequeridos && !hR) aC.push({pId, n:p.nombre}); }
-            if(aC.length===0) { return; } let tId;
-            if(aC.length===1) tId=aC[0].pId; else { let o="¿A cuál sumar?\n"; aC.forEach((c,i)=>o+=`${i+1}. ${c.n}\n`); const s=prompt(o); const i=parseInt(s)-1; if(isNaN(i)||i<0||i>=aC.length){return;} tId=aC[i].pId; }
-            await sumarSello(tId); mostrarAnimacionMagica();
-        }
+            window.mostrarLogin = function() { document.getElementById('tabLogin').classList.add('active'); document.getElementById('tabRegistro').classList.remove('active'); document.getElementById('loginBox').classList.remove('hidden'); document.getElementById('registerBox').classList.add('hidden'); }
+            window.mostrarRegistro = function() { document.getElementById('tabRegistro').classList.add('active'); document.getElementById('tabLogin').classList.remove('active'); document.getElementById('registerBox').classList.remove('hidden'); document.getElementById('loginBox').classList.add('hidden'); }
+            window.login = async function() { try { await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPass').value); } catch(e) { alert(e.message); } }
+            window.registrar = async function() { const n=document.getElementById('regNombre').value, e=document.getElementById('regEmail').value, p=document.getElementById('regPass').value, t=document.getElementById('regTel').value, na=document.getElementById('regNac').value; if(!n||!e||!p||!t||!na) return alert("Completa todo."); try { const c = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "negocios", negocioId, "clientes", c.user.uid), { nombre:n, contacto:e, telefono:t, fechaNacimiento:na }); } catch(err) { alert(err.message); } }
+            window.vincularNegocio = async function() { const n=document.getElementById('cpNombre').value, t=document.getElementById('cpTel').value, na=document.getElementById('cpNac').value; if(!n||!t||!na) return alert("Completa todo."); await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre:n, contacto:auth.currentUser.email, telefono:t, fechaNacimiento:na }); clientName=n; document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(sessionStorage.getItem('doStamp_' + negocioId) === 'true') sumarSelloDirecto(); }
+            window.cerrarSesion = async function() { await signOut(auth); }
 
-        function mostrarAnimacionMagica() {
-            const o = document.getElementById('magicOverlay'); o.style.display='flex';
-            for(let i=0; i<30; i++) { let c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.animationDelay=Math.random()*2+'s'; c.style.backgroundColor=[colorSello,colorFondo,'#fff'][Math.floor(Math.random()*3)]; o.appendChild(c); }
-            setTimeout(()=>{o.style.display='none'; o.querySelectorAll('.confetti').forEach(c=>c.remove());}, 2500);
-        }
+            async function cargarTarjetas() {
+                const container = document.getElementById('tarjetasContainer');
+                container.innerHTML = '';
+                
+                if(isExpired) {
+                    container.innerHTML = '<div class="auth-card"><h2>Promociones Pausadas</h2><p>El negocio está actualizando sus servicios. Vuelve pronto.</p></div>';
+                    return;
+                }
 
-        window.iniciarEscaneoQR = function(pId) {
-            const r = document.getElementById('reader'); r.classList.remove('hidden'); const h = new Html5Qrcode("reader");
-            h.start({facingMode:"environment"}, {fps:10, qrbox:{width:200,height:200}}, async(dT)=>{ h.stop(); r.classList.add('hidden'); if(dT.includes(`id=${negocioId}&accion=sello`)) { await sumarSello(pId); mostrarAnimacionMagica(); } else alert("QR inválido."); }, ()=>{}).catch(err=>alert("Error cámara."));
-        }
+                const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
+                if(premiosSnap.empty) { container.innerHTML = '<div class="auth-card"><p>El negocio aún no tiene premios.</p></div>'; return; }
 
-        async function sumarSello(pIdF) {
-            if(isExpired) return alert("Suscripción del negocio vencida.");
-            try {
-                const pS = await getDocs(collection(db, "negocios", negocioId, "premios"));
-                for(const d of pS.docs) { const p=d.data(), pId=d.id; if(pIdF && pId !== pIdF) continue; const tR=doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId); const tS=await getDoc(tR); let cS=0; if(tS.exists()) { cS=tS.data().sellos||0; if(tS.data().codigoRedencion) continue; } else if(p.visibilidad==='publico') cS=p.sellosIniciales||0; else continue; if(cS<p.sellosRequeridos) { let d={sellos:cS+1}; if(cS+1>=p.sellosRequeridos) d.codigoRedencion=Math.floor(1000+Math.random()*9000).toString(); await setDoc(tR, d, {merge:true}); await cargarTarjetas(); return; } }
-            } catch(e) { alert("Error sello."); }
+                const hoy = new Date().toISOString().split('T')[0];
+
+                for(const docSnap of premiosSnap.docs) {
+                    const premio = docSnap.data(); const pId = docSnap.id;
+                    const tRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
+                    const tSnap = await getDoc(tRef);
+                    let tData = null;
+                    if(!tSnap.exists() && pId === premioIdURL) { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); } 
+                    else if (tSnap.exists()) tData = tSnap.data();
+                    else if (premio.visibilidad === 'publico') { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); }
+                    if (!tData) continue;
+
+                    let sAct = tData.sellos || 0; let exp = (premio.vigenciaFin && hoy > premio.vigenciaFin); let cod = tData.codigoRedencion;
+                    let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
+                    let comp = sAct >= premio.sellosRequeridos;
+                    if (!exp && comp && !cod) { cod = Math.floor(1000+Math.random()*9000).toString(); await updateDoc(tRef, { codigoRedencion: cod }, { merge: true }); }
+                    
+                    let aH = '';
+                    if (exp) aH = '<p style="color:#ff6b6b; font-weight:bold;">❌ Promoción expirada</p>';
+                    else if (comp) aH = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${cod || 'XXXX'}</div>`;
+                    else aH = `<p style="font-size:14px; opacity:0.8;">Te faltan ${premio.sellosRequeridos - sAct} sellos</p><button class="btn-scan" onclick="iniciarEscaneoQR('${pId}')">Escanear para sumar Sello</button>`;
+
+                    const vB = premio.visibilidad === 'publico' ? '<span class="badge-pub">Público</span>' : '';
+                    container.innerHTML += `<div class="card-premium"><div class="card-body"><h2>${premio.nombre} ${vB}</h2><div class="stamps">${hS}</div><div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>${aH}</div></div>`;
+                }
+            }
+
+            async function sumarSelloDirecto() {
+                if(isExpired) return;
+                const pS = await getDocs(collection(db, "negocios", negocioId, "premios")); let aC = [];
+                for(const d of pS.docs) { const p=d.data(), pId=d.id; const tS=await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId)); let s=0, hR=false; if(tS.exists()) { s=tS.data().sellos||0; hR=!!tS.data().codigoRedencion; } else if(p.visibilidad==='publico') s=p.sellosIniciales||0; else continue; if(s<p.sellosRequeridos && !hR) aC.push({pId, n:p.nombre}); }
+                if(aC.length===0) { return; } let tId;
+                if(aC.length===1) tId=aC[0].pId; else { let o="¿A cuál sumar?\n"; aC.forEach((c,i)=>o+=`${i+1}. ${c.n}\n`); const s=prompt(o); const i=parseInt(s)-1; if(isNaN(i)||i<0||i>=aC.length){return;} tId=aC[i].pId; }
+                await sumarSello(tId); mostrarAnimacionMagica();
+            }
+
+            function mostrarAnimacionMagica() {
+                const o = document.getElementById('magicOverlay'); o.style.display='flex';
+                for(let i=0; i<30; i++) { let c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.animationDelay=Math.random()*2+'s'; c.style.backgroundColor=[colorSello,colorFondo,'#fff'][Math.floor(Math.random()*3)]; o.appendChild(c); }
+                setTimeout(()=>{o.style.display='none'; o.querySelectorAll('.confetti').forEach(c=>c.remove());}, 2500);
+            }
+
+            window.iniciarEscaneoQR = function(pId) {
+                const r = document.getElementById('reader'); r.classList.remove('hidden'); const h = new Html5Qrcode("reader");
+                h.start({facingMode:"environment"}, {fps:10, qrbox:{width:200,height:200}}, async(dT)=>{ h.stop(); r.classList.add('hidden'); if(dT.includes(`id=${negocioId}&accion=sello`)) { await sumarSello(pId); mostrarAnimacionMagica(); } else alert("QR inválido."); }, ()=>{}).catch(err=>alert("Error cámara."));
+            }
+
+            async function sumarSello(pIdF) {
+                if(isExpired) return alert("Suscripción del negocio vencida.");
+                try {
+                    const pS = await getDocs(collection(db, "negocios", negocioId, "premios"));
+                    for(const d of pS.docs) { const p=d.data(), pId=d.id; if(pIdF && pId !== pIdF) continue; const tR=doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId); const tS=await getDoc(tR); let cS=0; if(tS.exists()) { cS=tS.data().sellos||0; if(tS.data().codigoRedencion) continue; } else if(p.visibilidad==='publico') cS=p.sellosIniciales||0; else continue; if(cS<p.sellosRequeridos) { let d={sellos:cS+1}; if(cS+1>=p.sellosRequeridos) d.codigoRedencion=Math.floor(1000+Math.random()*9000).toString(); await setDoc(tR, d, {merge:true}); await cargarTarjetas(); return; } }
+                } catch(e) { alert("Error sello."); }
+            }
         }
     </script>
 </body>
