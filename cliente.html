@@ -43,7 +43,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v5.0.0</span>
+        <span class="version-tag">v5.1.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -177,17 +177,19 @@
                 const tarjetaSnap = await getDoc(tarjetaRef);
                 
                 let tarjetaData = null;
-                let isVirtual = false;
 
-                // Si la tarjeta no existe, pero viene del link de activación, la creamos
+                // Si la tarjeta no existe, pero viene del link de activación, la creamos en DB
                 if(!tarjetaSnap.exists() && pId === premioIdURL) { 
-                    await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }); 
-                    tarjetaData = { sellos: premio.sellosIniciales || 0 };
+                    await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); 
+                    const newSnap = await getDoc(tarjetaRef);
+                    tarjetaData = newSnap.data();
                 } else if (tarjetaSnap.exists()) {
                     tarjetaData = tarjetaSnap.data();
                 } else if (premio.visibilidad === 'publico') {
-                    tarjetaData = { sellos: premio.sellosIniciales || 0 }; // Virtual card
-                    isVirtual = true;
+                    // Sincronización real: Si es público y no existe, se crea en DB inmediatamente
+                    await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }, { merge: true });
+                    const newSnap = await getDoc(tarjetaRef);
+                    tarjetaData = newSnap.data();
                 }
 
                 if (!tarjetaData) continue; // Si es privado y no existe, no se muestra
@@ -200,10 +202,10 @@
                 for(let i=0; i<premio.sellosRequeridos; i++) htmlStamps += i < sellosActuales ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
                 const completado = sellosActuales >= premio.sellosRequeridos;
 
-                // Generar código si está completado y no es virtual y no tiene código
-                if (!expirado && completado && !isVirtual && !codigoRedencion) {
+                // Generar código si está completado y no tiene código
+                if (!expirado && completado && !codigoRedencion) {
                     const code = Math.floor(1000 + Math.random() * 9000).toString();
-                    await updateDoc(tarjetaRef, { codigoRedencion: code });
+                    await updateDoc(tarjetaRef, { codigoRedencion: code }, { merge: true });
                     codigoRedencion = code; 
                 }
 
@@ -229,9 +231,14 @@
                 const tarjetaSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId));
                 
                 let sellos = 0; let hasRedencion = false;
-                if(tarjetaSnap.exists()) { sellos = tarjetaSnap.data().sellos || 0; hasRedencion = !!tarjetaSnap.data().codigoRedencion; } 
-                else if (premio.visibilidad === 'publico') { sellos = premio.sellosIniciales || 0; } 
-                else { continue; }
+                if(tarjetaSnap.exists()) { 
+                    sellos = tarjetaSnap.data().sellos || 0; 
+                    hasRedencion = !!tarjetaSnap.data().codigoRedencion; 
+                } else if (premio.visibilidad === 'publico') { 
+                    sellos = premio.sellosIniciales || 0; 
+                } else { 
+                    continue; 
+                }
 
                 if(sellos < premio.sellosRequeridos && !hasRedencion) { activeCards.push({pId, nombre: premio.nombre}); }
             }
@@ -282,13 +289,26 @@
                     const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                     const tarjetaSnap = await getDoc(tarjetaRef);
                     
-                    // Soporte para tarjetas virtuales públicas
-                    if(!tarjetaSnap.exists() && premio.visibilidad === 'publico') {
-                        await setDoc(tarjetaRef, { sellos: (premio.sellosIniciales || 0) + 1 });
-                        await cargarTarjetas(); return;
-                    } else if(tarjetaSnap.exists() && tarjetaSnap.data().sellos < premio.sellosRequeridos) {
-                        await updateDoc(tarjetaRef, { sellos: tarjetaSnap.data().sellos + 1 });
-                        await cargarTarjetas(); return;
+                    let currentStamps = 0;
+                    if(tarjetaSnap.exists()) {
+                        currentStamps = tarjetaSnap.data().sellos || 0;
+                        if (tarjetaSnap.data().codigoRedencion) continue; // Ya está lista para canjear
+                    } else if (premio.visibilidad === 'publico') {
+                        currentStamps = premio.sellosIniciales || 0;
+                    } else {
+                        continue;
+                    }
+
+                    if(currentStamps < premio.sellosRequeridos) {
+                        let newStamps = currentStamps + 1;
+                        let data = { sellos: newStamps };
+                        if(newStamps >= premio.sellosRequeridos) {
+                            const code = Math.floor(1000 + Math.random() * 9000).toString();
+                            data.codigoRedencion = code;
+                        }
+                        await setDoc(tarjetaRef, data, { merge: true });
+                        await cargarTarjetas(); 
+                        return;
                     }
                 }
             } catch(e) { alert("Error al sumar sello."); }
