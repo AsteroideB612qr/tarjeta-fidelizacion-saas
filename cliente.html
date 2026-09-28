@@ -15,7 +15,6 @@
         .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 15px 0; }
         .stamp { width: 35px; height: 35px; border: 2px dashed #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
         .filled { background-color: #ffc107; border: none; } .hidden { display: none; }
-        #reader { width: 100%; border: 2px dashed #007bff; padding: 10px; border-radius: 8px; margin-top: 10px;}
         .expired { color: #dc3545; font-weight: bold; }
         .vigencia { font-size: 12px; color: #6c757d; margin-top: 5px; }
         .codigo-box { background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 24px; letter-spacing: 2px; margin-top: 10px; }
@@ -34,16 +33,12 @@
                 <div class="tab active" id="tabLogin" onclick="mostrarLogin()">Iniciar Sesión</div>
                 <div class="tab" id="tabRegistro" onclick="mostrarRegistro()">Registrarse</div>
             </div>
-
-            <!-- Vista Login -->
             <div id="loginBox">
                 <h2>¡Hola de nuevo!</h2>
                 <input type="email" id="loginEmail" placeholder="Tu Email">
                 <input type="password" id="loginPass" placeholder="Tu Contraseña">
                 <button onclick="login()">Iniciar Sesión</button>
             </div>
-
-            <!-- Vista Registro -->
             <div id="registerBox" class="hidden">
                 <h2>Crear Cuenta</h2>
                 <input type="text" id="regNombre" placeholder="Tu nombre">
@@ -55,7 +50,7 @@
             </div>
         </div>
 
-        <!-- Completar Perfil (Si ya tiene cuenta global pero es nuevo en este negocio) -->
+        <!-- Completar Perfil -->
         <div id="completarPerfilForm" class="card hidden">
             <h2>¡Bienvenido a otro negocio!</h2>
             <p>Tu cuenta existe, pero necesitas dejar tus datos para <strong id="negocioNombrePerfil"></strong>:</p>
@@ -68,12 +63,10 @@
         <!-- Billetera -->
         <div id="walleView" class="hidden">
             <div id="tarjetasContainer"></div>
-            <div id="reader" class="hidden"></div>
             <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px;">Cerrar Sesión</button>
         </div>
     </div>
 
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script type="module">
         import { db, auth } from "./firebase.js";
         import { doc, getDoc, collection, getDocs, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -82,7 +75,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const negocioId = urlParams.get('id');
         const premioIdURL = urlParams.get('premio');
-        const accion = urlParams.get('accion');
+        const accion = urlParams.get('accion'); // 'sello' si viene de NFC
 
         let clienteId = null;
         let pinNegocio = "";
@@ -103,19 +96,18 @@
                 if (user) {
                     clienteId = user.uid;
                     document.getElementById('authForm').classList.add('hidden');
-                    
                     const clienteSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
                     if (!clienteSnap.exists()) {
-                        // Mostrar form de vinculación
                         document.getElementById('negocioNombrePerfil').innerText = nombreNegocio;
                         document.getElementById('completarPerfilForm').classList.remove('hidden');
                         document.getElementById('walleView').classList.add('hidden');
                     } else {
-                        // Cargar billetera normal
                         document.getElementById('completarPerfilForm').classList.add('hidden');
                         document.getElementById('walleView').classList.remove('hidden');
                         await cargarTarjetas();
-                        if(accion === 'sello') validarSello();
+                        if(accion === 'sello') {
+                            sumarSelloDirecto(); // ¡NFC automático!
+                        }
                     }
                 } else {
                     document.getElementById('authForm').classList.remove('hidden');
@@ -132,22 +124,18 @@
             document.getElementById('loginBox').classList.remove('hidden');
             document.getElementById('registerBox').classList.add('hidden');
         }
-
         window.mostrarRegistro = function() {
             document.getElementById('tabRegistro').classList.add('active');
             document.getElementById('tabLogin').classList.remove('active');
             document.getElementById('registerBox').classList.remove('hidden');
             document.getElementById('loginBox').classList.add('hidden');
         }
-
         window.login = async function() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
             if(!email || !pass) return alert("Completa los campos.");
-            try { await signInWithEmailAndPassword(auth, email, pass); } 
-            catch(e) { alert("Error: " + e.message); }
+            try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error: " + e.message); }
         }
-
         window.registrar = async function() {
             const nombre = document.getElementById('regNombre').value;
             const email = document.getElementById('regEmail').value;
@@ -157,31 +145,23 @@
             if(!nombre || !email || !pass || !tel || !nac) return alert("Completa todos los campos para registrar.");
             try {
                 const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { 
-                    nombre, contacto: email, telefono: tel, fechaNacimiento: nac 
-                });
+                await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { nombre, contacto: email, telefono: tel, fechaNacimiento: nac });
             } catch(e) {
-                if(e.code === 'auth/email-already-in-use') {
-                    alert("Este correo ya está registrado globalmente. Inicia sesión para vincularlo a este negocio.");
-                    mostrarLogin();
-                } else { alert("Error: " + e.message); }
+                if(e.code === 'auth/email-already-in-use') { alert("Este correo ya está registrado. Inicia sesión para vincularlo."); mostrarLogin(); } 
+                else { alert("Error: " + e.message); }
             }
         }
-
         window.vincularNegocio = async function() {
             const nombre = document.getElementById('cpNombre').value;
             const tel = document.getElementById('cpTel').value;
             const nac = document.getElementById('cpNac').value;
             if(!nombre || !tel || !nac) return alert("Completa tus datos.");
-            
-            await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { 
-                nombre, contacto: auth.currentUser.email, telefono: tel, fechaNacimiento: nac 
-            });
+            await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre, contacto: auth.currentUser.email, telefono: tel, fechaNacimiento: nac });
             document.getElementById('completarPerfilForm').classList.add('hidden');
             document.getElementById('walleView').classList.remove('hidden');
             await cargarTarjetas();
+            if(accion === 'sello') sumarSelloDirecto();
         }
-
         window.cerrarSesion = async function() { await signOut(auth); }
 
         async function cargarTarjetas() {
@@ -197,17 +177,14 @@
                 const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                 const tarjetaSnap = await getDoc(tarjetaRef);
                 
-                if(!tarjetaSnap.exists()) {
-                    if(pId === premioIdURL) { 
-                        await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }); 
-                    } else { continue; }
-                }
+                if(!tarjetaSnap.exists() && pId === premioIdURL) { 
+                    await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }); 
+                } else if(!tarjetaSnap.exists()) { continue; }
 
                 const tarjetaData = tarjetaSnap.exists() ? tarjetaSnap.data() : { sellos: premio.sellosIniciales || 0 };
                 let sellosActuales = tarjetaData.sellos || 0;
 
-                let expirado = false;
-                if(premio.vigenciaFin && hoy > premio.vigenciaFin) expirado = true;
+                let expirado = (premio.vigenciaFin && hoy > premio.vigenciaFin);
 
                 let htmlStamps = '';
                 for(let i=0; i<premio.sellosRequeridos; i++) htmlStamps += i < sellosActuales ? '<div class="stamp filled">⭐</div>' : '<div class="stamp"></div>';
@@ -223,52 +200,59 @@
                 if (expirado) {
                     accionHTML = '<p class="expired">❌ Promoción expirada</p>';
                 } else if (completado) {
-                    accionHTML = `
-                        <p style="color:#28a745; font-weight:bold;">¡Felicidades! Canjea tu premio.</p>
-                        <div class="codigo-box">CÓDIGO: ${tarjetaData.codigoRedencion}</div>
-                        <p style="font-size:12px; margin-top:5px;">Muestra este código al cajero.</p>
-                    `;
+                    accionHTML = `<p style="color:#28a745; font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${tarjetaData.codigoRedencion}</div><p style="font-size:12px;">Muestra este código al cajero.</p>`;
                 } else {
-                    accionHTML = `
-                        <p>Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p>
-                        <button onclick="validarSello('${pId}')">Sumar Sello</button>
-                    `;
+                    accionHTML = `<p>Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p><button onclick="validarSelloManual('${pId}')">Sumar Sello (Cajero)</button>`;
                 }
 
-                container.innerHTML += `
-                    <div class="card">
-                        <h2>${premio.nombre}</h2>
-                        <div class="stamps">${htmlStamps}</div>
-                        <div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>
-                        ${accionHTML}
-                    </div>
-                `;
+                container.innerHTML += `<div class="card"><h2>${premio.nombre}</h2><div class="stamps">${htmlStamps}</div><div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>${accionHTML}</div>`;
             }
         }
 
-        window.validarSello = async function(pIdForzado) {
-            const metodo = prompt("¿Cómo deseas validar?\n1. Ingresar PIN\n2. Escanear QR\n\n(Escribe 1 o 2)");
-            if(metodo === "1") {
-                const pin = prompt("Cajero: Ingrese el PIN:");
-                if(pin === pinNegocio) { await sumarSello(pIdForzado); } else { alert("PIN incorrecto."); }
-            } else if(metodo === "2") {
-                iniciarEscaneoQR(pIdForzado);
+        // Nuevo: Sumar sello automático por NFC
+        async function sumarSelloDirecto() {
+            const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
+            let activeCards = [];
+            
+            for(const docSnap of premiosSnap.docs) {
+                const premio = docSnap.data(); const pId = docSnap.id;
+                const tarjetaSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId));
+                if(tarjetaSnap.exists() && tarjetaSnap.data().sellos < premio.sellosRequeridos && !tarjetaSnap.data().codigoRedencion) {
+                    activeCards.push({pId, nombre: premio.nombre});
+                }
+            }
+
+            if (activeCards.length === 0) {
+                alert("No tienes tarjetas activas para sumar sellos. Escanea el QR de un premio primero.");
+                limpiarAccionURL();
+                return;
+            }
+
+            let targetCardId;
+            if (activeCards.length === 1) {
+                targetCardId = activeCards[0].pId;
             } else {
-                alert("Método no válido.");
+                let opciones = "Tienes varias tarjetas activas. ¿A cuál sumar el sello?\n";
+                activeCards.forEach((c, i) => opciones += `${i+1}. ${c.nombre}\n`);
+                const seleccion = prompt(opciones);
+                const index = parseInt(seleccion) - 1;
+                if (isNaN(index) || index < 0 || index >= activeCards.length) { limpiarAccionURL(); return; }
+                targetCardId = activeCards[index].pId;
             }
+
+            await sumarSello(targetCardId);
+            limpiarAccionURL(); // Evita que recargue y vuelva a sumar
         }
 
-        function iniciarEscaneoQR(pIdForzado) {
-            const readerElement = document.getElementById('reader');
-            readerElement.classList.remove('hidden');
-            const html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width: 200, height: 200} },
-                async (decodedText) => {
-                    html5QrCode.stop(); readerElement.classList.add('hidden');
-                    if(decodedText.includes(`id=${negocioId}&accion=sello`)) {
-                        alert("QR validado."); await sumarSello(pIdForzado);
-                    } else { alert("QR no pertenece a este negocio."); }
-                }, (err) => {}).catch(err => alert("Error al abrir cámara."));
+        // Limpia la URL para evitar múltiples sellos al recargar
+        function limpiarAccionURL() {
+            history.replaceState(null, null, window.location.pathname + `?id=${negocioId}`);
+        }
+
+        // Solo si el cajero usa el botón manual
+        window.validarSelloManual = async function(pIdForzado) {
+            const pin = prompt("Cajero: Ingrese el PIN (Solo si el NFC falla):");
+            if(pin === pinNegocio) { await sumarSello(pIdForzado); } else { alert("PIN incorrecto."); }
         }
 
         async function sumarSello(pIdForzado) {
@@ -280,14 +264,12 @@
 
                     const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                     const tarjetaSnap = await getDoc(tarjetaRef);
-                    
                     if(tarjetaSnap.exists() && tarjetaSnap.data().sellos < premio.sellosRequeridos) {
                         await updateDoc(tarjetaRef, { sellos: tarjetaSnap.data().sellos + 1 });
-                        alert("¡Sello agregado!");
+                        alert("¡Sello agregado con éxito!");
                         cargarTarjetas(); return;
                     }
                 }
-                if(!pIdForzado) alert("Escanea el enlace de un premio primero para activarlo.");
             } catch(e) { alert("Error al sumar sello."); }
         }
     </script>
