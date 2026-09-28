@@ -63,7 +63,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v8.2.1</span>
+        <span class="version-tag">v8.2.2</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -136,11 +136,10 @@
             const baseUrl = window.location.origin + window.location.pathname.replace('cliente.html', '');
             let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
             let isExpired = true, clientName = "";
-            let activeCardId = null; 
             let ndefReader = null;
-            let isStamping = false; // Candado anti-duplicado
-            let stampCode = "FIDELIDAD_STAMP"; // Código dinámico de la DB
-            let html5QrCodeInstance = null; // Instancia de la cámara
+            let isStamping = false; 
+            let stampCode = "FIDELIDAD_STAMP";
+            let html5QrCodeInstance = null;
 
             const icons = {
                 ig: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E4405F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`,
@@ -166,7 +165,7 @@
                         }
                         if(data.redes) redes = data.redes;
                         if(data.fechaVencimiento) { isExpired = new Date(data.fechaVencimiento) < new Date(); }
-                        if(data.stampCode) stampCode = data.stampCode; // Cargar código dinámico
+                        if(data.stampCode) stampCode = data.stampCode;
                         
                         if(logoUrl) {
                             const manifest = {
@@ -269,29 +268,29 @@
                 }
             }
 
+            // --- ESCÁNER UNIFICADO ---
             window.iniciarValidacion = function(pId) {
-                activeCardId = pId;
-                isStamping = false; // Resetear candado
+                const targetCardId = pId; // Atar el ID localmente para evitar que se pierda
+                isStamping = false;
                 document.getElementById('scannerOverlay').style.display = 'flex';
                 
-                // 1. Intentar activar NFC (Solo funciona en Android Chrome)
+                // 1. NFC
                 if ('NDEFReader' in window) {
                     try {
                         ndefReader = new NDEFReader();
                         ndefReader.scan().then(() => {
                             ndefReader.onreading = async (event) => {
-                                if(isStamping) return; // Si ya está sellando, ignorar
+                                if(isStamping) return;
                                 const decoder = new TextDecoder();
                                 for (const record of event.message.records) {
                                     if (record.recordType === "text") {
                                         const text = decoder.decode(record.data);
-                                        // Usamos includes para ignorar prefijos de idioma que agregan algunas apps NFC
                                         if (text.includes(stampCode)) {
-                                            isStamping = true; // Cerrar candado
+                                            isStamping = true;
                                             detenerEscaneo();
-                                            await sumarSello(activeCardId);
+                                            await sumarSelloDirecto(targetCardId);
                                             mostrarAnimacionMagica();
-                                            setTimeout(() => { isStamping = false; }, 3000); // Abrir candado en 3s
+                                            setTimeout(() => { isStamping = false; }, 3000);
                                         }
                                     }
                                 }
@@ -300,14 +299,10 @@
                     } catch(e) { console.log("Error NFC:", e); }
                 }
 
-                // 2. Iniciar cámara QR (Para iOS y fallback de Android)
+                // 2. Cámara QR
                 const readerElement = document.getElementById('reader');
                 readerElement.classList.remove('hidden');
-                
-                // Limpiar instancia previa si existe
-                if (html5QrCodeInstance) {
-                    try { html5QrCodeInstance.stop(); } catch(e){}
-                }
+                if (html5QrCodeInstance) { try { html5QrCodeInstance.stop(); } catch(e){} }
                 
                 html5QrCodeInstance = new Html5Qrcode("reader");
                 html5QrCodeInstance.start({facingMode:"environment"}, {fps: 10, qrbox: {width: 200, height: 200}},
@@ -316,7 +311,7 @@
                         if(decodedText.includes(`id=${negocioId}&accion=sello`)) {
                             isStamping = true;
                             detenerEscaneo();
-                            await sumarSello(activeCardId);
+                            await sumarSelloDirecto(targetCardId);
                             mostrarAnimacionMagica();
                             setTimeout(() => { isStamping = false; }, 3000);
                         }
@@ -327,8 +322,6 @@
             window.detenerEscaneo = function() {
                 document.getElementById('scannerOverlay').style.display = 'none';
                 const readerElement = document.getElementById('reader');
-                
-                // Detener la cámara de forma correcta usando la instancia guardada
                 if (html5QrCodeInstance) {
                     html5QrCodeInstance.stop().then(() => {
                         html5QrCodeInstance.clear();
@@ -341,30 +334,59 @@
                 } else {
                     readerElement.classList.add('hidden');
                 }
-                activeCardId = null;
             }
 
-            async function sumarSelloDirecto() {
+            // Sumar sello directo a tarjeta específica
+            async function sumarSelloDirecto(pIdF) {
+                if(isExpired) return alert("Suscripción del negocio vencida.");
+                if(!pIdF) return alert("Error: No se seleccionó una tarjeta válida.");
+                
+                try {
+                    const pRef = doc(db, "negocios", negocioId, "premios", pIdF);
+                    const pSnap = await getDoc(pRef);
+                    if(!pSnap.exists()) return alert("Este premio ya no existe.");
+                    
+                    const premio = pSnap.data();
+                    const tR = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pIdF);
+                    const tS = await getDoc(tR);
+                    
+                    let cS = 0;
+                    if(tS.exists()) {
+                        cS = tS.data().sellos || 0;
+                        if(tS.data().codigoRedencion) return alert("Esta tarjeta ya está lista para canjear.");
+                    } else if(premio.visibilidad === 'publico') {
+                        cS = premio.sellosIniciales || 0;
+                    } else {
+                        return alert("No tienes esta tarjeta activa.");
+                    }
+                    
+                    if(cS < premio.sellosRequeridos) {
+                        let data = { sellos: cS + 1 };
+                        if(cS + 1 >= premio.sellosRequeridos) {
+                            data.codigoRedencion = Math.floor(1000 + Math.random() * 9000).toString();
+                        }
+                        await setDoc(tR, data, { merge: true });
+                        await cargarTarjetas();
+                    } else {
+                        alert("Esta tarjeta ya está completa.");
+                    }
+                } catch(e) { alert("Error al sumar sello."); }
+            }
+
+            // Este se usa solo si entra por el viejo link de NFC (redirección)
+            async function sumarSelloDirectoSinTarget() {
                 if(isExpired) return;
                 const pS = await getDocs(collection(db, "negocios", negocioId, "premios")); let aC = [];
                 for(const d of pS.docs) { const p=d.data(), pId=d.id; const tS=await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId)); let s=0, hR=false; if(tS.exists()) { s=tS.data().sellos||0; hR=!!tS.data().codigoRedencion; } else if(p.visibilidad==='publico') s=p.sellosIniciales||0; else continue; if(s<p.sellosRequeridos && !hR) aC.push({pId, n:p.nombre}); }
                 if(aC.length===0) { return; } let tId;
                 if(aC.length===1) tId=aC[0].pId; else { let o="¿A cuál sumar?\n"; aC.forEach((c,i)=>o+=`${i+1}. ${c.n}\n`); const s=prompt(o); const i=parseInt(s)-1; if(isNaN(i)||i<0||i>=aC.length){return;} tId=aC[i].pId; }
-                await sumarSello(tId); mostrarAnimacionMagica();
+                await sumarSelloDirecto(tId); mostrarAnimacionMagica();
             }
 
             function mostrarAnimacionMagica() {
                 const o = document.getElementById('magicOverlay'); o.style.display='flex';
                 for(let i=0; i<30; i++) { let c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.animationDelay=Math.random()*2+'s'; c.style.backgroundColor=[colorSello,colorFondo,'#fff'][Math.floor(Math.random()*3)]; o.appendChild(c); }
                 setTimeout(()=>{o.style.display='none'; o.querySelectorAll('.confetti').forEach(c=>c.remove());}, 2500);
-            }
-
-            async function sumarSello(pIdF) {
-                if(isExpired) return alert("Suscripción del negocio vencida.");
-                try {
-                    const pS = await getDocs(collection(db, "negocios", negocioId, "premios"));
-                    for(const d of pS.docs) { const p=d.data(), pId=d.id; if(pIdF && pId !== pIdF) continue; const tR=doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId); const tS=await getDoc(tR); let cS=0; if(tS.exists()) { cS=tS.data().sellos||0; if(tS.data().codigoRedencion) continue; } else if(p.visibilidad==='publico') cS=p.sellosIniciales||0; else continue; if(cS<p.sellosRequeridos) { let d={sellos:cS+1}; if(cS+1>=p.sellosRequeridos) d.codigoRedencion=Math.floor(1000+Math.random()*9000).toString(); await setDoc(tR, d, {merge:true}); await cargarTarjetas(); return; } }
-                } catch(e) { alert("Error sello."); }
             }
         }
     </script>
