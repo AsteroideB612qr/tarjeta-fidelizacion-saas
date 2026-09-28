@@ -15,6 +15,9 @@
         .wallet-header { text-align: center; margin-bottom: 30px; }
         .wallet-logo { width: 80px; height: 80px; border-radius: 20px; object-fit: cover; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px; }
         .wallet-name { font-size: 22px; font-weight: bold; color: #333; margin: 0; }
+        .welcome-msg { font-size: 16px; color: #666; margin-top: 5px; }
+        .socials-row { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+        .socials-row a { text-decoration: none; font-size: 24px; }
         .card-premium { background: var(--primary-color); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 25px; overflow: hidden; color: white; }
         .card-body { padding: 25px 20px; text-align: center; }
         .card-body h2 { color: white; margin-top: 0; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -43,7 +46,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v5.1.0</span>
+        <span class="version-tag">v6.0.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -83,7 +86,7 @@
 
     <div id="magicOverlay">
         <div class="star-anim">★</div>
-        <h2 style="color:white; margin-top:30px; letter-spacing: 1px;">¡Sello Agregado!</h2>
+        <h2 style="color:white; margin-top:30px;">¡Sello Agregado!</h2>
     </div>
 
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -97,11 +100,8 @@
         const premioIdURL = urlParams.get('premio');
         const accion = urlParams.get('accion'); 
 
-        let clienteId = null;
-        let nombreNegocio = "";
-        let logoUrl = "";
-        let colorFondo = "#1a1a1a";
-        let colorSello = "#ffc107";
+        let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
+        let isExpired = true, clientName = "";
 
         window.onload = async function() {
             if (!negocioId) return alert("Enlace inválido.");
@@ -117,6 +117,8 @@
                         document.documentElement.style.setProperty('--primary-color', colorFondo);
                         document.documentElement.style.setProperty('--stamp-color', colorSello);
                     }
+                    if(data.redes) redes = data.redes;
+                    if(data.fechaVencimiento) { isExpired = new Date(data.fechaVencimiento) < new Date(); }
                 }
             } catch (e) { alert("Error al cargar negocio."); }
 
@@ -124,27 +126,23 @@
                 if (user) {
                     clienteId = user.uid;
                     document.getElementById('authForm').classList.add('hidden');
-                    const clienteSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
-                    if (!clienteSnap.exists()) {
+                    const cSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
+                    if (!cSnap.exists()) {
                         document.getElementById('negocioNombrePerfil').innerText = nombreNegocio;
                         document.getElementById('completarPerfilForm').classList.remove('hidden');
-                        document.getElementById('walleView').classList.add('hidden');
                     } else {
+                        clientName = cSnap.data().nombre;
                         document.getElementById('completarPerfilForm').classList.add('hidden');
                         document.getElementById('walleView').classList.remove('hidden');
                         renderHeader(); 
                         await cargarTarjetas();
-                        if(accion === 'sello') {
-                            const stampKey = 'stamped_' + negocioId;
-                            if(sessionStorage.getItem(stampKey) !== 'true') {
-                                sessionStorage.setItem(stampKey, 'true');
-                                sumarSelloDirecto(); 
-                            } else { limpiarAccionURL(); }
+                        if(accion === 'sello' && !isExpired) {
+                            const k = 'stamped_' + negocioId;
+                            if(sessionStorage.getItem(k) !== 'true') { sessionStorage.setItem(k, 'true'); sumarSelloDirecto(); } else { limpiarAccionURL(); }
                         }
                     }
                 } else {
                     document.getElementById('authForm').classList.remove('hidden');
-                    document.getElementById('completarPerfilForm').classList.add('hidden');
                     document.getElementById('walleView').classList.add('hidden');
                     mostrarLogin();
                 }
@@ -152,20 +150,38 @@
         };
 
         function renderHeader() {
-            const headerHtml = `${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}<h1 class="wallet-name">${nombreNegocio}</h1>`;
+            let socialsHtml = '';
+            if(redes.ig) socialsHtml += `<a href="${redes.ig}" target="_blank">📸</a>`;
+            if(redes.tk) socialsHtml += `<a href="${redes.tk}" target="_blank">🎵</a>`;
+            if(redes.fb) socialsHtml += `<a href="${redes.fb}" target="_blank">👥</a>`;
+            if(redes.mail) socialsHtml += `<a href="mailto:${redes.mail}" target="_blank">✉️</a>`;
+            if(redes.wa) socialsHtml += `<a href="https://wa.me/${redes.wa.replace(/[^0-9]/g,'')}" target="_blank">💬</a>`;
+            
+            const headerHtml = `
+                ${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}
+                <h1 class="wallet-name">${nombreNegocio}</h1>
+                ${clientName ? `<div class="welcome-msg">¡Bienvenido, ${clientName}!</div>` : ''}
+                ${socialsHtml ? `<div class="socials-row">${socialsHtml}</div>` : ''}
+            `;
             document.getElementById('walletHeader').innerHTML = headerHtml;
         }
 
         window.mostrarLogin = function() { document.getElementById('tabLogin').classList.add('active'); document.getElementById('tabRegistro').classList.remove('active'); document.getElementById('loginBox').classList.remove('hidden'); document.getElementById('registerBox').classList.add('hidden'); }
         window.mostrarRegistro = function() { document.getElementById('tabRegistro').classList.add('active'); document.getElementById('tabLogin').classList.remove('active'); document.getElementById('registerBox').classList.remove('hidden'); document.getElementById('loginBox').classList.add('hidden'); }
-        window.login = async function() { const email = document.getElementById('loginEmail').value; const pass = document.getElementById('loginPass').value; try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error: " + e.message); } }
-        window.registrar = async function() { const nombre = document.getElementById('regNombre').value; const email = document.getElementById('regEmail').value; const pass = document.getElementById('regPass').value; const tel = document.getElementById('regTel').value; const nac = document.getElementById('regNac').value; if(!nombre || !email || !pass || !tel || !nac) return alert("Completa todos los campos."); try { const cred = await createUserWithEmailAndPassword(auth, email, pass); await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { nombre, contacto: email, telefono: tel, fechaNacimiento: nac }); } catch(e) { if(e.code === 'auth/email-already-in-use') { alert("Este correo ya está registrado. Inicia sesión."); mostrarLogin(); } else { alert("Error: " + e.message); } } }
-        window.vincularNegocio = async function() { const nombre = document.getElementById('cpNombre').value; const tel = document.getElementById('cpTel').value; const nac = document.getElementById('cpNac').value; if(!nombre || !tel || !nac) return alert("Completa tus datos."); await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre, contacto: auth.currentUser.email, telefono: tel, fechaNacimiento: nac }); document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(accion === 'sello') sumarSelloDirecto(); }
+        window.login = async function() { try { await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPass').value); } catch(e) { alert(e.message); } }
+        window.registrar = async function() { const n=document.getElementById('regNombre').value, e=document.getElementById('regEmail').value, p=document.getElementById('regPass').value, t=document.getElementById('regTel').value, na=document.getElementById('regNac').value; if(!n||!e||!p||!t||!na) return alert("Completa todo."); try { const c = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "negocios", negocioId, "clientes", c.user.uid), { nombre:n, contacto:e, telefono:t, fechaNacimiento:na }); } catch(err) { alert(err.message); } }
+        window.vincularNegocio = async function() { const n=document.getElementById('cpNombre').value, t=document.getElementById('cpTel').value, na=document.getElementById('cpNac').value; if(!n||!t||!na) return alert("Completa todo."); await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre:n, contacto:auth.currentUser.email, telefono:t, fechaNacimiento:na }); clientName=n; document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(accion==='sello') sumarSelloDirecto(); }
         window.cerrarSesion = async function() { await signOut(auth); }
 
         async function cargarTarjetas() {
             const container = document.getElementById('tarjetasContainer');
             container.innerHTML = '';
+            
+            if(isExpired) {
+                container.innerHTML = '<div class="auth-card"><h2>Promociones Pausadas</h2><p>El negocio está actualizando sus servicios. Vuelve pronto.</p></div>';
+                return;
+            }
+
             const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
             if(premiosSnap.empty) { container.innerHTML = '<div class="auth-card"><p>El negocio aún no tiene premios.</p></div>'; return; }
 
@@ -173,145 +189,57 @@
 
             for(const docSnap of premiosSnap.docs) {
                 const premio = docSnap.data(); const pId = docSnap.id;
-                const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
-                const tarjetaSnap = await getDoc(tarjetaRef);
+                const tRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
+                const tSnap = await getDoc(tRef);
+                let tData = null;
+                if(!tSnap.exists() && pId === premioIdURL) { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); } 
+                else if (tSnap.exists()) tData = tSnap.data();
+                else if (premio.visibilidad === 'publico') { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); }
+                if (!tData) continue;
+
+                let sAct = tData.sellos || 0; let exp = (premio.vigenciaFin && hoy > premio.vigenciaFin); let cod = tData.codigoRedencion;
+                let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
+                let comp = sAct >= premio.sellosRequeridos;
+                if (!exp && comp && !cod) { cod = Math.floor(1000+Math.random()*9000).toString(); await updateDoc(tRef, { codigoRedencion: cod }, { merge: true }); }
                 
-                let tarjetaData = null;
+                let aH = '';
+                if (exp) aH = '<p style="color:#ff6b6b; font-weight:bold;">❌ Promoción expirada</p>';
+                else if (comp) aH = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${cod || 'XXXX'}</div>`;
+                else aH = `<p style="font-size:14px; opacity:0.8;">Te faltan ${premio.sellosRequeridos - sAct} sellos</p><button class="btn-scan" onclick="iniciarEscaneoQR('${pId}')">Escanear para sumar Sello</button>`;
 
-                // Si la tarjeta no existe, pero viene del link de activación, la creamos en DB
-                if(!tarjetaSnap.exists() && pId === premioIdURL) { 
-                    await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); 
-                    const newSnap = await getDoc(tarjetaRef);
-                    tarjetaData = newSnap.data();
-                } else if (tarjetaSnap.exists()) {
-                    tarjetaData = tarjetaSnap.data();
-                } else if (premio.visibilidad === 'publico') {
-                    // Sincronización real: Si es público y no existe, se crea en DB inmediatamente
-                    await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }, { merge: true });
-                    const newSnap = await getDoc(tarjetaRef);
-                    tarjetaData = newSnap.data();
-                }
-
-                if (!tarjetaData) continue; // Si es privado y no existe, no se muestra
-
-                let sellosActuales = tarjetaData.sellos || 0;
-                let expirado = (premio.vigenciaFin && hoy > premio.vigenciaFin);
-                let codigoRedencion = tarjetaData.codigoRedencion;
-
-                let htmlStamps = '';
-                for(let i=0; i<premio.sellosRequeridos; i++) htmlStamps += i < sellosActuales ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
-                const completado = sellosActuales >= premio.sellosRequeridos;
-
-                // Generar código si está completado y no tiene código
-                if (!expirado && completado && !codigoRedencion) {
-                    const code = Math.floor(1000 + Math.random() * 9000).toString();
-                    await updateDoc(tarjetaRef, { codigoRedencion: code }, { merge: true });
-                    codigoRedencion = code; 
-                }
-
-                let accionHTML = '';
-                if (expirado) {
-                    accionHTML = '<p style="color:#ff6b6b; font-weight:bold;">❌ Promoción expirada</p>';
-                } else if (completado) {
-                    accionHTML = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${codigoRedencion || 'XXXX'}</div>`;
-                } else {
-                    accionHTML = `<p style="font-size:14px; opacity:0.8;">Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p><button class="btn-scan" onclick="iniciarEscaneoQR('${pId}')">Escanear para sumar Sello</button>`;
-                }
-
-                const visBadge = premio.visibilidad === 'publico' ? '<span class="badge-pub">Público</span>' : '';
-                container.innerHTML += `<div class="card-premium"><div class="card-body"><h2>${premio.nombre} ${visBadge}</h2><div class="stamps">${htmlStamps}</div><div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>${accionHTML}</div></div>`;
+                const vB = premio.visibilidad === 'publico' ? '<span class="badge-pub">Público</span>' : '';
+                container.innerHTML += `<div class="card-premium"><div class="card-body"><h2>${premio.nombre} ${vB}</h2><div class="stamps">${hS}</div><div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>${aH}</div></div>`;
             }
         }
 
         async function sumarSelloDirecto() {
-            const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
-            let activeCards = [];
-            for(const docSnap of premiosSnap.docs) {
-                const premio = docSnap.data(); const pId = docSnap.id;
-                const tarjetaSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId));
-                
-                let sellos = 0; let hasRedencion = false;
-                if(tarjetaSnap.exists()) { 
-                    sellos = tarjetaSnap.data().sellos || 0; 
-                    hasRedencion = !!tarjetaSnap.data().codigoRedencion; 
-                } else if (premio.visibilidad === 'publico') { 
-                    sellos = premio.sellosIniciales || 0; 
-                } else { 
-                    continue; 
-                }
-
-                if(sellos < premio.sellosRequeridos && !hasRedencion) { activeCards.push({pId, nombre: premio.nombre}); }
-            }
-            if (activeCards.length === 0) { limpiarAccionURL(); return; }
-            let targetCardId;
-            if (activeCards.length === 1) { targetCardId = activeCards[0].pId; } 
-            else {
-                let opciones = "Tienes varias tarjetas. ¿A cuál sumar el sello?\n";
-                activeCards.forEach((c, i) => opciones += `${i+1}. ${c.nombre}\n`);
-                const seleccion = prompt(opciones);
-                const index = parseInt(seleccion) - 1;
-                if (isNaN(index) || index < 0 || index >= activeCards.length) { limpiarAccionURL(); return; }
-                targetCardId = activeCards[index].pId;
-            }
-            await sumarSello(targetCardId);
-            mostrarAnimacionMagica();
-            limpiarAccionURL();
+            if(isExpired) return;
+            const pS = await getDocs(collection(db, "negocios", negocioId, "premios")); let aC = [];
+            for(const d of pS.docs) { const p=d.data(), pId=d.id; const tS=await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId)); let s=0, hR=false; if(tS.exists()) { s=tS.data().sellos||0; hR=!!tS.data().codigoRedencion; } else if(p.visibilidad==='publico') s=p.sellosIniciales||0; else continue; if(s<p.sellosRequeridos && !hR) aC.push({pId, n:p.nombre}); }
+            if(aC.length===0) { limpiarAccionURL(); return; } let tId;
+            if(aC.length===1) tId=aC[0].pId; else { let o="¿A cuál sumar?\n"; aC.forEach((c,i)=>o+=`${i+1}. ${c.n}\n`); const s=prompt(o); const i=parseInt(s)-1; if(isNaN(i)||i<0||i>=aC.length){limpiarAccionURL();return;} tId=aC[i].pId; }
+            await sumarSello(tId); mostrarAnimacionMagica(); limpiarAccionURL();
         }
 
         function mostrarAnimacionMagica() {
-            const overlay = document.getElementById('magicOverlay');
-            overlay.style.display = 'flex';
-            for(let i=0; i<30; i++) { let c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.animationDelay = Math.random() * 2 + 's'; c.style.backgroundColor = [colorSello, colorFondo, '#ffffff'][Math.floor(Math.random()*3)]; overlay.appendChild(c); }
-            setTimeout(() => { overlay.style.display = 'none'; overlay.querySelectorAll('.confetti').forEach(c => c.remove()); }, 2500);
+            const o = document.getElementById('magicOverlay'); o.style.display='flex';
+            for(let i=0; i<30; i++) { let c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.animationDelay=Math.random()*2+'s'; c.style.backgroundColor=[colorSello,colorFondo,'#fff'][Math.floor(Math.random()*3)]; o.appendChild(c); }
+            setTimeout(()=>{o.style.display='none'; o.querySelectorAll('.confetti').forEach(c=>c.remove());}, 2500);
         }
 
         function limpiarAccionURL() { history.replaceState(null, null, window.location.pathname + `?id=${negocioId}`); }
 
         window.iniciarEscaneoQR = function(pId) {
-            const readerElement = document.getElementById('reader');
-            readerElement.classList.remove('hidden');
-            const html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width: 200, height: 200} },
-                async (decodedText) => {
-                    html5QrCode.stop(); readerElement.classList.add('hidden');
-                    if(decodedText.includes(`id=${negocioId}&accion=sello`)) { await sumarSello(pId); mostrarAnimacionMagica(); } 
-                    else { alert("QR no pertenece a este negocio."); }
-                }, (err) => {}
-            ).catch(err => alert("Error al abrir cámara: " + err));
+            const r = document.getElementById('reader'); r.classList.remove('hidden'); const h = new Html5Qrcode("reader");
+            h.start({facingMode:"environment"}, {fps:10, qrbox:{width:200,height:200}}, async(dT)=>{ h.stop(); r.classList.add('hidden'); if(dT.includes(`id=${negocioId}&accion=sello`)) { await sumarSello(pId); mostrarAnimacionMagica(); } else alert("QR inválido."); }, ()=>{}).catch(err=>alert("Error cámara."));
         }
 
-        async function sumarSello(pIdForzado) {
+        async function sumarSello(pIdF) {
+            if(isExpired) return alert("Suscripción del negocio vencida.");
             try {
-                const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
-                for(const docSnap of premiosSnap.docs) {
-                    const premio = docSnap.data(); const pId = docSnap.id;
-                    if(pIdForzado && pId !== pIdForzado) continue;
-                    const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
-                    const tarjetaSnap = await getDoc(tarjetaRef);
-                    
-                    let currentStamps = 0;
-                    if(tarjetaSnap.exists()) {
-                        currentStamps = tarjetaSnap.data().sellos || 0;
-                        if (tarjetaSnap.data().codigoRedencion) continue; // Ya está lista para canjear
-                    } else if (premio.visibilidad === 'publico') {
-                        currentStamps = premio.sellosIniciales || 0;
-                    } else {
-                        continue;
-                    }
-
-                    if(currentStamps < premio.sellosRequeridos) {
-                        let newStamps = currentStamps + 1;
-                        let data = { sellos: newStamps };
-                        if(newStamps >= premio.sellosRequeridos) {
-                            const code = Math.floor(1000 + Math.random() * 9000).toString();
-                            data.codigoRedencion = code;
-                        }
-                        await setDoc(tarjetaRef, data, { merge: true });
-                        await cargarTarjetas(); 
-                        return;
-                    }
-                }
-            } catch(e) { alert("Error al sumar sello."); }
+                const pS = await getDocs(collection(db, "negocios", negocioId, "premios"));
+                for(const d of pS.docs) { const p=d.data(), pId=d.id; if(pIdF && pId !== pIdF) continue; const tR=doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId); const tS=await getDoc(tR); let cS=0; if(tS.exists()) { cS=tS.data().sellos||0; if(tS.data().codigoRedencion) continue; } else if(p.visibilidad==='publico') cS=p.sellosIniciales||0; else continue; if(cS<p.sellosRequeridos) { let d={sellos:cS+1}; if(cS+1>=p.sellosRequeridos) d.codigoRedencion=Math.floor(1000+Math.random()*9000).toString(); await setDoc(tR, d, {merge:true}); await cargarTarjetas(); return; } }
+            } catch(e) { alert("Error sello."); }
         }
     </script>
 </body>
