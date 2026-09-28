@@ -102,7 +102,6 @@
             tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
             
             try {
-                // Quitamos el orderBy para evitar errores si algún documento no tiene el campo
                 const querySnapshot = await getDocs(collection(db, "negocios"));
                 
                 if(querySnapshot.empty) { 
@@ -118,7 +117,7 @@
                     const id = docSnap.id;
                     const linkPanel = `${baseUrl}panel.html?id=${id}`;
                     
-                    let estadoHtml = '<span class="status-expired">Vencido/Sin Pagar</span><br><button class="btn-success" onclick="extenderSuscripcion(\'${id}\', null)">Activar +30 días</button>';
+                    let estadoHtml = `<span class="status-expired">Vencido/Sin Pagar</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}', null)">Activar +30 días</button>`;
                     
                     if(negocio.fechaVencimiento) {
                         const fecha = new Date(negocio.fechaVencimiento);
