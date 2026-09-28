@@ -35,75 +35,83 @@
         .wallet-item { background: #f9f9f9; padding: 10px; border-radius: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         .badge-vis { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; color: white; }
         .badge-pub { background: #28a745; } .badge-priv { background: #ffc107; color: black; }
+        .alert-sub { background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffeeba; text-align: center; font-weight: bold; }
+        .alert-danger-sub { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f5c6cb; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="authView" class="auth-box hidden">
         <h2>🔒 Acceso Seguro</h2>
-        <p>Este panel es privado para el dueño o colaboradores.</p>
         <div id="loginFormBox">
             <input type="email" id="loginEmail" placeholder="Email">
             <input type="password" id="loginPass" placeholder="Contraseña">
             <button onclick="login()">Iniciar Sesión</button>
-            <p style="font-size:12px; margin-top:15px; color:#666;">¿Primera vez aquí? <a href="#" onclick="mostrarRegistro()" style="color:#007bff;">Reclamar cuenta</a></p>
+            <p style="font-size:12px; margin-top:15px; color:#666;">¿Primera vez? <a href="#" onclick="mostrarRegistro()" style="color:#007bff;">Reclamar cuenta</a></p>
         </div>
         <div id="registerFormBox" class="hidden">
-            <p>Reclama este panel creando tu contraseña:</p>
+            <p>Reclama este panel:</p>
             <input type="email" id="regEmail" placeholder="Tu Email">
             <input type="password" id="regPass" placeholder="Crea una Contraseña">
             <button class="btn-success" onclick="registrar()">Crear Cuenta</button>
-            <p style="font-size:12px; margin-top:15px; color:#666;">¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()" style="color:#007bff;">Iniciar sesión</a></p>
+            <p style="font-size:12px; margin-top:15px; color:#666;">¿Ya tienes? <a href="#" onclick="mostrarLogin()" style="color:#007bff;">Iniciar sesión</a></p>
         </div>
     </div>
 
     <div id="appView" class="container hidden">
-        <span class="version-tag">v5.1.0</span>
+        <span class="version-tag">v6.0.0</span>
         <h1 id="tituloNegocio">Cargando panel...</h1>
+        <div id="subAlert"></div>
         
-        <h2>🎨 Personalización Visual</h2>
+        <h2>🎨 Personalización Visual y Redes</h2>
         <div class="form-row">
-            <div style="flex:3;">
-                <label>Logo del Negocio:</label>
-                <input type="file" id="logoFile" accept="image/*">
-            </div>
-            <div><label>Color Fondo Tarjeta:</label><input type="color" id="colorFondo" value="#1a1a1a" class="color-input"></div>
-            <div><label>Color de Sellos:</label><input type="color" id="colorSello" value="#ffc107" class="color-input"></div>
+            <div style="flex:3;"><label>Logo:</label><input type="file" id="logoFile" accept="image/*"></div>
+            <div><label>Color Fondo:</label><input type="color" id="colorFondo" value="#1a1a1a" class="color-input"></div>
+            <div><label>Color Sellos:</label><input type="color" id="colorSello" value="#ffc107" class="color-input"></div>
         </div>
-        <button onclick="guardarDiseno()">Guardar Diseño</button>
+        <div class="form-row">
+            <div><label>Instagram URL:</label><input type="url" id="igLink" placeholder="https://instagram.com/..."></div>
+            <div><label>TikTok URL:</label><input type="url" id="tkLink" placeholder="https://tiktok.com/..."></div>
+            <div><label>Facebook URL:</label><input type="url" id="fbLink" placeholder="https://facebook.com/..."></div>
+        </div>
+        <div class="form-row">
+            <div><label>Email Contacto:</label><input type="email" id="mailLink" placeholder="hola@negocio.com"></div>
+            <div><label>WhatsApp (Ej: 5212345678):</label><input type="text" id="waLink" placeholder="5212345678"></div>
+        </div>
+        <button onclick="guardarDiseno()">Guardar Diseño y Redes</button>
 
         <div class="info-box">
             <h2>📸 Puntos de Venta Físicos</h2>
             <div class="pos-grid">
                 <div class="pos-card">
                     <p><strong>1. Acceso Directo (Billetera)</strong></p>
-                    <img id="qrWallet" src="" alt="QR Billetera" style="width: 150px; height: 150px;">
-                    <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar Link</button></div>
+                    <img id="qrWallet" src="" alt="QR" style="width: 150px; height: 150px;">
+                    <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar</button></div>
                 </div>
                 <div class="pos-card">
                     <p><strong>2. Sellador (QR / NFC)</strong></p>
-                    <img id="qrSello" src="" alt="QR Sello" style="width: 150px; height: 150px;">
-                    <div class="link-box"><span id="linkNfc" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px;">Copiar Link Sellador</button></div>
+                    <img id="qrSello" src="" alt="QR" style="width: 150px; height: 150px;">
+                    <div class="link-box"><span id="linkNfc" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px;">Copiar</button></div>
                 </div>
             </div>
         </div>
 
         <h2>Validar Premio Canjeado</h2>
         <div class="form-row">
-            <div style="flex:1;"><label>Código de Redención del Cliente:</label><input type="text" id="inputRedencion" placeholder="Ej: 4521"></div>
-            <div style="display:flex; align-items:flex-end;"><button class="btn-success" onclick="validarRedencion()">Canjear Premio</button></div>
+            <div style="flex:1;"><label>Código Cliente:</label><input type="text" id="inputRedencion" placeholder="Ej: 4521"></div>
+            <div style="display:flex; align-items:flex-end;"><button class="btn-success" onclick="validarRedencion()">Canjear</button></div>
         </div>
 
         <h2>Crear Premio</h2>
         <div class="form-row">
-            <div style="flex:2;"><label>Nombre Premio:</label><input type="text" id="premioNombre" placeholder="Café Gratis"></div>
-            <div><label>Sellos Totales:</label><input type="number" id="premioSellos" placeholder="5" min="1"></div>
+            <div style="flex:2;"><label>Nombre:</label><input type="text" id="premioNombre" placeholder="Café Gratis"></div>
+            <div><label>Total Sellos:</label><input type="number" id="premioSellos" placeholder="5" min="1"></div>
             <div><label>Iniciales:</label><input type="number" id="premioIniciales" placeholder="1" min="0" value="0"></div>
-            <div><label>Visibilidad:</label><select id="premioVisibilidad"><option value="publico">Público (Aparece en todas las billeteras)</option><option value="privado">Privado (Se envía individual)</option></select></div>
+            <div><label>Visibilidad:</label><select id="premioVisibilidad"><option value="publico">Público</option><option value="privado">Privado</option></select></div>
         </div>
         <div class="form-row">
-            <div><label>Vigencia Desde:</label><input type="date" id="premioInicio"></div>
-            <div><label>Vigencia Hasta:</label><input type="date" id="premioFin"></div>
-            <div style="display:flex; align-items:flex-end;"><button onclick="crearPremio()" style="width:100%;">Añadir Premio</button></div>
+            <div><label>Desde:</label><input type="date" id="premioInicio"></div>
+            <div><label>Hasta:</label><input type="date" id="premioFin"></div>
+            <div style="display:flex; align-items:flex-end;"><button onclick="crearPremio()" style="width:100%;">Añadir</button></div>
         </div>
 
         <h2>Premios Activos</h2>
@@ -115,7 +123,7 @@
         <h2>🛒 Gestión de Clientes (CRM)</h2>
         <button onclick="descargarCSV()" style="background-color:#17a2b8; margin-bottom:10px;">Descargar CSV</button>
         <table>
-            <thead><tr><th>Datos Cliente</th><th>Tarjetas Activas (Sincronizado)</th><th>Marketing</th><th>Acción</th></tr></thead>
+            <thead><tr><th>Cliente</th><th>Tarjetas</th><th>WhatsApp</th><th>Acción</th></tr></thead>
             <tbody id="tablaClientes"><tr><td colspan="4">Cargando...</td></tr></tbody>
         </table>
         <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px; width:auto; padding:5px 10px; float:right;">Cerrar Sesión</button>
@@ -125,21 +133,18 @@
         <div class="modal-box">
             <h3>Gestión de Billetera</h3>
             <p>Cliente: <strong id="modalClientName"></strong></p>
-            
             <h4>Premios Actuales</h4>
             <div id="modalCardsList"><p>Cargando...</p></div>
-
             <h4>Enviar Premio Privado</h4>
             <select id="modalPremioSelect" style="margin-bottom: 10px;"></select>
-            <button class="btn-success" onclick="enviarPremioIndividual()" style="width:100%;">Enviar a este Cliente</button>
-            
+            <button class="btn-success" onclick="enviarPremioIndividual()" style="width:100%;">Enviar</button>
             <button class="btn-gray" onclick="closeWalletModal()" style="width: auto; float: right; margin-top: 10px; padding: 5px 10px;">Cerrar</button>
         </div>
     </div>
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -148,9 +153,8 @@
 
         const docRef = doc(db, "negocios", negocioId);
         const baseUrl = window.location.origin + window.location.pathname.replace('panel.html', '');
-        let clientesData = [];
-        let premiosMap = {};
-        let currentModalClientId = null;
+        let clientesData = [], premiosMap = {}, currentModalClientId = null;
+        let isExpired = false;
 
         window.onload = async function() {
             try {
@@ -162,25 +166,47 @@
                         document.getElementById('colorFondo').value = data.diseno.colorFondo || '#1a1a1a';
                         document.getElementById('colorSello').value = data.diseno.colorSello || '#ffc107';
                     }
+                    if(data.redes) {
+                        document.getElementById('igLink').value = data.redes.ig || '';
+                        document.getElementById('tkLink').value = data.redes.tk || '';
+                        document.getElementById('fbLink').value = data.redes.fb || '';
+                        document.getElementById('mailLink').value = data.redes.mail || '';
+                        document.getElementById('waLink').value = data.redes.wa || '';
+                    }
+                    
+                    // Lógica de suscripción
+                    const alertDiv = document.getElementById('subAlert');
+                    if(data.fechaVencimiento) {
+                        const fecha = new Date(data.fechaVencimiento);
+                        const now = new Date();
+                        if(fecha > now) {
+                            const daysLeft = Math.ceil((fecha - now) / (1000 * 60 * 60 * 24));
+                            alertDiv.className = daysLeft <= 5 ? 'alert-danger-sub' : 'alert-sub';
+                            alertDiv.innerText = `Tu suscripción vence en ${daysLeft} días (${fecha.toLocaleDateString()}). Realiza tu pago para evitar interrupciones.`;
+                            isExpired = false;
+                        } else {
+                            alertDiv.className = 'alert-danger-sub';
+                            alertDiv.innerText = `SUSCRIPCIÓN VENCIDA. Realiza tu pago para volver a activar la creación de premios y validación de sellos.`;
+                            isExpired = true;
+                        }
+                    } else {
+                        alertDiv.className = 'alert-sub';
+                        alertDiv.innerText = `No tienes una suscripción activa. Activa tu plan para comenzar.`;
+                        isExpired = true;
+                    }
                 }
                 setupLinks();
-            } catch (e) { alert("Error al cargar datos."); }
+            } catch (e) { alert("Error al cargar."); }
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if (data.ownerUid && data.ownerUid !== user.uid) {
-                            alert("No tienes permiso para acceder a este panel.");
-                            await signOut(auth);
-                            return;
-                        }
-                        if (!data.ownerUid) { await setDoc(docRef, { ownerUid: user.uid }, { merge: true }); }
+                        if (docSnap.data().ownerUid && docSnap.data().ownerUid !== user.uid) { await signOut(auth); return alert("Sin permiso."); }
+                        if (!docSnap.data().ownerUid) { await setDoc(docRef, { ownerUid: user.uid }, { merge: true }); }
                         document.getElementById('authView').classList.add('hidden');
                         document.getElementById('appView').classList.remove('hidden');
-                        cargarPremios();
-                        cargarClientes();
+                        cargarPremios(); cargarClientes();
                     }
                 } else {
                     document.getElementById('authView').classList.remove('hidden');
@@ -192,201 +218,92 @@
         };
 
         function setupLinks() {
-            const cacheBuster = new Date().getTime();
-            const walletUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cacheBuster}`;
-            const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cacheBuster}`;
-            document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
-            document.getElementById('linkWallet').innerText = walletUrl;
-            document.getElementById('qrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(selloUrl)}`;
-            document.getElementById('linkNfc').innerText = selloUrl;
+            const cb = new Date().getTime();
+            const wUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cb}`;
+            const sUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cb}`;
+            document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(wUrl)}`;
+            document.getElementById('linkWallet').innerText = wUrl;
+            document.getElementById('qrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(sUrl)}`;
+            document.getElementById('linkNfc').innerText = sUrl;
         }
 
         window.mostrarLogin = function() { document.getElementById('loginFormBox').classList.remove('hidden'); document.getElementById('registerFormBox').classList.add('hidden'); }
         window.mostrarRegistro = function() { document.getElementById('registerFormBox').classList.remove('hidden'); document.getElementById('loginFormBox').classList.add('hidden'); }
-        window.login = async function() { const email = document.getElementById('loginEmail').value; const pass = document.getElementById('loginPass').value; try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error: " + e.message); } }
-        window.registrar = async function() { const email = document.getElementById('regEmail').value; const pass = document.getElementById('regPass').value; if(!email || !pass) return alert("Completa los campos."); try { await createUserWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error al registrar: " + e.message); } }
+        window.login = async function() { try { await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPass').value); } catch(e) { alert(e.message); } }
+        window.registrar = async function() { try { await createUserWithEmailAndPassword(auth, document.getElementById('regEmail').value, document.getElementById('regPass').value); } catch(e) { alert(e.message); } }
         window.cerrarSesion = async function() { await signOut(auth); }
-        window.copiarLink = function(elementId) { navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => alert('¡Link copiado!')); }
+        window.copiarLink = function(el) { navigator.clipboard.writeText(document.getElementById(el).innerText).then(() => alert('Copiado!')); }
 
         window.guardarDiseno = async function() {
+            if(isExpired) return alert("Suscripción vencida. No puedes guardar cambios.");
+            const diseno = { colorFondo: document.getElementById('colorFondo').value, colorSello: document.getElementById('colorSello').value };
+            const redes = { ig: document.getElementById('igLink').value, tk: document.getElementById('tkLink').value, fb: document.getElementById('fbLink').value, mail: document.getElementById('mailLink').value, wa: document.getElementById('waLink').value };
             const fileInput = document.getElementById('logoFile');
-            const colorFondo = document.getElementById('colorFondo').value;
-            const colorSello = document.getElementById('colorSello').value;
-            let diseno = { colorFondo, colorSello };
             if (fileInput.files[0]) {
                 const reader = new FileReader();
-                reader.onload = async function(e) { diseno.logo = e.target.result; await setDoc(docRef, { diseno }, { merge: true }); alert("¡Diseño y logo guardados!"); };
+                reader.onload = async function(e) { diseno.logo = e.target.result; await setDoc(docRef, { diseno, redes }, { merge: true }); alert("Guardado!"); };
                 reader.readAsDataURL(fileInput.files[0]);
-            } else { await setDoc(docRef, { diseno }, { merge: true }); alert("¡Colores guardados!"); }
+            } else { await setDoc(docRef, { diseno, redes }, { merge: true }); alert("Guardado!"); }
         }
 
         window.crearPremio = async function() {
-            const nombre = document.getElementById('premioNombre').value;
-            const sellos = parseInt(document.getElementById('premioSellos').value);
-            const iniciales = parseInt(document.getElementById('premioIniciales').value) || 0;
-            const visibilidad = document.getElementById('premioVisibilidad').value;
-            const inicio = document.getElementById('premioInicio').value;
-            const fin = document.getElementById('premioFin').value;
-            if(!nombre || !sellos || !inicio || !fin) return alert("Completa todos los campos.");
-            try {
-                await addDoc(collection(db, "negocios", negocioId, "premios"), { nombre, sellosRequeridos: sellos, sellosIniciales: iniciales, vigenciaInicio: inicio, vigenciaFin: fin, visibilidad });
-                document.getElementById('premioNombre').value = ''; document.getElementById('premioSellos').value = ''; document.getElementById('premioIniciales').value = '0';
-                document.getElementById('premioInicio').value = ''; document.getElementById('premioFin').value = '';
-                cargarPremios();
-            } catch (e) { alert("Error al crear premio."); }
+            if(isExpired) return alert("Suscripción vencida. Paga para reactivar.");
+            const p = { nombre: document.getElementById('premioNombre').value, sellosRequeridos: parseInt(document.getElementById('premioSellos').value), sellosIniciales: parseInt(document.getElementById('premioIniciales').value)||0, vigenciaInicio: document.getElementById('premioInicio').value, vigenciaFin: document.getElementById('premioFin').value, visibilidad: document.getElementById('premioVisibilidad').value };
+            if(!p.nombre || !p.sellosRequeridos || !p.vigenciaInicio || !p.vigenciaFin) return alert("Completa campos.");
+            try { await addDoc(collection(db, "negocios", negocioId, "premios"), p); cargarPremios(); } catch(e) { alert("Error."); }
         }
 
-        window.eliminarPremio = async function(id) { if(confirm("¿Eliminar premio?")) { await deleteDoc(doc(db, "negocios", negocioId, "premios", id)); cargarPremios(); } }
+        window.eliminarPremio = async function(id) { if(confirm("¿Eliminar?")) { await deleteDoc(doc(db, "negocios", negocioId, "premios", id)); cargarPremios(); } }
 
         async function cargarPremios() {
-            const tbody = document.getElementById('tablaPremios');
-            tbody.innerHTML = '';
             premiosMap = {};
-            const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "premios"));
-            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="5">No hay premios.</td></tr>'; return; }
-            querySnapshot.forEach((docSnap) => {
-                const p = docSnap.data(); 
-                const pId = docSnap.id;
-                premiosMap[pId] = p;
-                const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${pId}`;
-                const visBadge = p.visibilidad === 'privado' ? '<span class="badge-vis badge-priv">Privado</span>' : '<span class="badge-vis badge-pub">Público</span>';
-                tbody.innerHTML += `<tr><td><strong>${p.nombre}</strong> (${p.sellosIniciales}/${p.sellosRequeridos})</td><td>${visBadge}</td><td>${p.vigenciaInicio} al ${p.vigenciaFin}</td><td><a href="${link}" target="_blank">Activar</a></td><td><button class="btn-danger" onclick="eliminarPremio('${pId}')">Eliminar</button></td></tr>`;
-            });
+            const t = document.getElementById('tablaPremios'); t.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
+            const s = await getDocs(collection(db, "negocios", negocioId, "premios"));
+            if(s.empty) { t.innerHTML = '<tr><td colspan="5">No hay premios.</td></tr>'; return; }
+            t.innerHTML = '';
+            s.forEach(d => { premiosMap[d.id] = d.data(); const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${d.id}`; const v = d.data().visibilidad === 'privado' ? '<span class="badge-vis badge-priv">Priv</span>' : '<span class="badge-vis badge-pub">Púb</span>'; t.innerHTML += `<tr><td><strong>${d.data().nombre}</strong></td><td>${v}</td><td>${d.data().vigenciaInicio} al ${d.data().vigenciaFin}</td><td><a href="${link}" target="_blank">Link</a></td><td><button class="btn-danger" onclick="eliminarPremio('${d.id}')">Elim</button></td></tr>`; });
         }
 
         async function cargarClientes() {
-            const tbody = document.getElementById('tablaClientes');
-            tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
-            clientesData = [];
-            const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
-            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="4">Aún no hay clientes.</td></tr>'; return; }
-            tbody.innerHTML = '';
-            for (const docSnap of querySnapshot.docs) {
-                const c = docSnap.data(); const id = docSnap.id; clientesData.push(c);
-                const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
-                let tarjetasHtml = '<span style="color:#999;">Ninguna activa</span>';
-                if (!tarjetasSnap.empty) {
-                    tarjetasHtml = '';
-                    for (const tDoc of tarjetasSnap.docs) {
-                        const t = tDoc.data();
-                        const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
-                        const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
-                        
-                        if(t.codigoRedencion) {
-                            tarjetasHtml += `<div class="card-info"><span>🏆 ${pNombre} - Cód: ${t.codigoRedencion}</span><button class="btn-add-stamp" disabled>+1</button></div>`;
-                        } else if (t.sellos >= pTotal) {
-                            tarjetasHtml += `<div class="card-info"><span>🏆 ${pNombre} - Cód: ?</span><button class="btn-add-stamp" disabled>+1</button></div>`;
-                        } else {
-                            tarjetasHtml += `<div class="card-info"><span>⭐ ${pNombre}: ${t.sellos || 0}/${pTotal}</span><button class="btn-add-stamp" onclick="sumarSelloManual('${id}', '${tDoc.id}', ${pTotal})">+1</button></div>`;
-                        }
-                    }
-                }
-                tbody.innerHTML += `<tr><td><strong>${c.nombre}</strong><br><small>${c.contacto}</small><br><small>📱 ${c.telefono || 'N/A'}</small></td><td>${tarjetasHtml}</td><td><input type="text" placeholder="Msg..." id="msg-${id}" style="margin-bottom:5px;"><button class="btn-wa" style="width:100%;" onclick="enviarWhatsApp('${id}', '${c.telefono}')">WhatsApp</button></td><td><button class="btn-wallet-mgmt" onclick="abrirModalBilletera('${id}', '${c.nombre}')">Gestionar Billetera</button><button class="btn-danger" style="margin-top:5px; width:100%; padding:5px;" onclick="eliminarCliente('${id}')">Eliminar</button></td></tr>`;
+            const t = document.getElementById('tablaClientes'); t.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>'; clientesData = [];
+            const s = await getDocs(collection(db, "negocios", negocioId, "clientes"));
+            if(s.empty) { t.innerHTML = '<tr><td colspan="4">Sin clientes.</td></tr>'; return; }
+            t.innerHTML = '';
+            for (const d of s.docs) {
+                const c = d.data(); const id = d.id; clientesData.push(c);
+                const tS = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
+                let h = '<span style="color:#999;">Ninguna</span>';
+                if (!tS.empty) { h = ''; for (const tD of tS.docs) { const t = tD.data(); const pN = premiosMap[tD.id]?.nombre || 'Elim'; const pT = premiosMap[tD.id]?.sellosRequeridos || '?'; h += `<div class="card-info"><span>${t.codigoRedencion ? '🏆' : '⭐'} ${pN}: ${t.codigoRedencion ? 'Cód '+t.codigoRedencion : (t.sellos||0)+'/'+pT}</span>${!t.codigoRedencion && (t.sellos||0)<pT ? `<button class="btn-add-stamp" onclick="sumarSelloManual('${id}','${tD.id}',${pT})">+1</button>` : ''}</div>`; } }
+                t.innerHTML += `<tr><td><strong>${c.nombre}</strong><br><small>${c.contacto}</small></td><td>${h}</td><td><input type="text" placeholder="Msg..." id="msg-${id}" style="margin-bottom:5px;"><button class="btn-wa" style="width:100%;" onclick="enviarWhatsApp('${id}','${c.telefono}')">WA</button></td><td><button class="btn-wallet-mgmt" onclick="abrirModalBilletera('${id}','${c.nombre}')">Gestionar</button><button class="btn-danger" style="margin-top:5px; width:100%; padding:5px;" onclick="eliminarCliente('${id}')">Elim</button></td></tr>`;
             }
         }
 
-        window.sumarSelloManual = async function(clientId, cardId, maxSellos) {
-            try {
-                const cardRef = doc(db, "negocios", negocioId, "clientes", clientId, "tarjetas", cardId);
-                const cardSnap = await getDoc(cardRef);
-                if(cardSnap.exists()) {
-                    let currentStamps = cardSnap.data().sellos || 0;
-                    if(currentStamps < maxSellos) {
-                        let newStamps = currentStamps + 1;
-                        let data = { sellos: newStamps };
-                        if(newStamps >= maxSellos) {
-                            const code = Math.floor(1000 + Math.random() * 9000).toString();
-                            data.codigoRedencion = code;
-                        }
-                        await updateDoc(cardRef, data);
-                        alert("¡Sello sumado!");
-                        cargarClientes();
-                        if(currentModalClientId === clientId) await cargarModalCards(clientId);
-                    } else { alert("Tarjeta completada."); }
-                }
-            } catch(e) { alert("Error."); }
+        window.sumarSelloManual = async function(cid, tid, max) {
+            if(isExpired) return alert("Suscripción vencida.");
+            const r = doc(db, "negocios", negocioId, "clientes", cid, "tarjetas", tid);
+            const s = await getDoc(r);
+            if(s.exists()) { let cur = s.data().sellos||0; if(cur<max) { let dat={sellos:cur+1}; if(cur+1>=max) dat.codigoRedencion = Math.floor(1000+Math.random()*9000).toString(); await updateDoc(r, dat); cargarClientes(); if(currentModalClientId===cid) cargarModalCards(cid); } }
         }
 
-        window.enviarWhatsApp = function(id, telefono) { if(!telefono) return alert("Sin teléfono."); const msg = document.getElementById('msg-'+id).value; const url = `https://wa.me/${telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`; window.open(url, '_blank'); }
-
+        window.enviarWhatsApp = function(id, tel) { if(!tel) return alert("Sin teléfono."); window.open(`https://wa.me/${tel.replace(/[^0-9]/g,'')}?text=${encodeURIComponent(document.getElementById('msg-'+id).value)}`, '_blank'); }
         window.validarRedencion = async function() {
-            const code = document.getElementById('inputRedencion').value.trim();
-            if(!code) return alert("Ingresa código.");
-            try {
-                const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
-                for (const docSnap of querySnapshot.docs) {
-                    const id = docSnap.id;
-                    const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
-                    for (const tDoc of tarjetasSnap.docs) {
-                        if(tDoc.data().codigoRedencion === code) {
-                            await deleteDoc(doc(db, "negocios", negocioId, "clientes", id, "tarjetas", tDoc.id));
-                            alert("¡Premio canjeado!"); document.getElementById('inputRedencion').value = ''; cargarClientes(); return;
-                        }
-                    }
-                }
-                alert("Código no válido.");
-            } catch(e) { alert("Error."); }
+            if(isExpired) return alert("Suscripción vencida.");
+            const code = document.getElementById('inputRedencion').value.trim(); if(!code) return alert("Ingresa código.");
+            try { const s = await getDocs(collection(db, "negocios", negocioId, "clientes")); for (const d of s.docs) { const id=d.id; const tS = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas")); for (const tD of tS.docs) { if(tD.data().codigoRedencion === code) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id, "tarjetas", tD.id)); alert("Canjeado!"); cargarClientes(); return; } } } alert("No válido."); } catch(e) {}
         }
+        window.eliminarCliente = async function(id) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id)); cargarClientes(); }
+        window.descargarCSV = function() { if(clientesData.length===0) return; let csv="Nombre,Email,Telefono,FechaNacimiento\n"; clientesData.forEach(c=>csv+=`${c.nombre},${c.contacto},${c.telefono||''},${c.fechaNacimiento||''}\n`); const b=new Blob([csv],{type:'text/csv'}); const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download='clientes.csv'; l.click(); }
 
-        window.eliminarCliente = async function(id) { if(confirm("¿Eliminar?")) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id)); cargarClientes(); } }
-
-        window.descargarCSV = function() { if(clientesData.length === 0) return alert("Sin clientes."); let csv = "Nombre,Email,Telefono,FechaNacimiento\n"; clientesData.forEach(c => { csv += `${c.nombre},${c.contacto},${c.telefono || ''},${c.fechaNacimiento || ''}\n`; }); const blob = new Blob([csv], { type: 'text/csv' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'clientes.csv'; link.click(); }
-
-        window.abrirModalBilletera = async function(clientId, clientName) {
-            currentModalClientId = clientId;
-            document.getElementById('modalClientName').innerText = clientName;
-            const select = document.getElementById('modalPremioSelect');
-            select.innerHTML = '';
-            let privCount = 0;
-            for(let id in premiosMap) {
-                if(premiosMap[id].visibilidad === 'privado') {
-                    select.innerHTML += `<option value="${id}">${premiosMap[id].nombre}</option>`;
-                    privCount++;
-                }
-            }
-            if(privCount === 0) select.innerHTML = '<option value="" disabled selected>No tienes premios privados</option>';
-            await cargarModalCards(clientId);
-            document.getElementById('walletModal').classList.remove('hidden');
+        window.abrirModalBilletera = async function(cid, name) {
+            currentModalClientId = cid; document.getElementById('modalClientName').innerText = name; const sel = document.getElementById('modalPremioSelect'); sel.innerHTML = ''; let c=0; for(let id in premiosMap) { if(premiosMap[id].visibilidad==='privado') { sel.innerHTML += `<option value="${id}">${premiosMap[id].nombre}</option>`; c++; } } if(c===0) sel.innerHTML='<option value="" disabled selected>Sin premios privados</option>'; await cargarModalCards(cid); document.getElementById('walletModal').classList.remove('hidden');
         }
-
         window.closeWalletModal = function() { document.getElementById('walletModal').classList.add('hidden'); currentModalClientId = null; }
-
-        async function cargarModalCards(clientId) {
-            const listDiv = document.getElementById('modalCardsList');
-            listDiv.innerHTML = '<p>Cargando...</p>';
-            const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", clientId, "tarjetas"));
-            if(tarjetasSnap.empty) { listDiv.innerHTML = '<p>El cliente no tiene tarjetas.</p>'; return; }
-            listDiv.innerHTML = '';
-            for(const tDoc of tarjetasSnap.docs) {
-                const t = tDoc.data();
-                const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
-                const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
-                let status = '';
-                if(t.codigoRedencion) { status = `🏆 LISTO (Cód: ${t.codigoRedencion})`; } 
-                else if (t.sellos >= pTotal) { status = `🏆 LISTO (Cód: ?)`; } 
-                else { status = `⭐ En progreso: ${t.sellos || 0}/${pTotal}`; }
-                listDiv.innerHTML += `<div class="wallet-item"><span>${pNombre} - ${status}</span><button class="btn-danger" style="width:auto; padding:2px 5px; font-size:10px; margin:0;" onclick="eliminarTarjetaCliente('${tDoc.id}')">Eliminar</button></div>`;
-            }
+        async function cargarModalCards(cid) {
+            const lD = document.getElementById('modalCardsList'); lD.innerHTML = '<p>Cargando...</p>'; const tS = await getDocs(collection(db, "negocios", negocioId, "clientes", cid, "tarjetas")); if(tS.empty) { lD.innerHTML = '<p>Sin tarjetas.</p>'; return; } lD.innerHTML = '';
+            for(const tD of tS.docs) { const t = tD.data(); const pN = premiosMap[tD.id]?.nombre || 'Elim'; const pT = premiosMap[tD.id]?.sellosRequeridos || '?'; let st = t.codigoRedencion ? `🏆 Cód: ${t.codigoRedencion}` : (t.sellos>=pT ? '🏆 Listo' : `⭐ ${t.sellos||0}/${pT}`); lD.innerHTML += `<div class="wallet-item"><span>${pN} - ${st}</span><button class="btn-danger" style="width:auto;padding:2px 5px;font-size:10px;margin:0;" onclick="eliminarTarjetaCliente('${tD.id}')">Elim</button></div>`; }
         }
-
-        window.eliminarTarjetaCliente = async function(cardId) {
-            if(!currentModalClientId) return;
-            if(confirm("¿Eliminar esta tarjeta?")) {
-                await deleteDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", cardId));
-                await cargarModalCards(currentModalClientId); cargarClientes();
-            }
-        }
-
-        window.enviarPremioIndividual = async function() {
-            if(!currentModalClientId) return;
-            const selectedPremioId = document.getElementById('modalPremioSelect').value;
-            if(!selectedPremioId) return alert("Selecciona un premio válido.");
-            const iniciales = premiosMap[selectedPremioId].sellosIniciales || 0;
-            try {
-                await setDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", selectedPremioId), { sellos: iniciales }, { merge: true });
-                alert("¡Premio privado enviado!"); await cargarModalCards(currentModalClientId); cargarClientes();
-            } catch(e) { alert("Error al enviar premio."); }
-        }
+        window.eliminarTarjetaCliente = async function(tid) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", tid)); cargarModalCards(currentModalClientId); cargarClientes(); }
+        window.enviarPremioIndividual = async function() { const pId = document.getElementById('modalPremioSelect').value; if(!pId) return; await setDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", pId), { sellos: premiosMap[pId].sellosIniciales || 0 }, { merge: true }); alert("Enviado!"); cargarModalCards(currentModalClientId); cargarClientes(); }
     </script>
 </body>
 </html>
