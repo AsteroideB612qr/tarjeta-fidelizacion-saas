@@ -25,15 +25,16 @@
         .version-tag { position: absolute; top: 20px; right: 20px; background: #007bff; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
         .color-input { width: 100%; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
         .btn-add-stamp { background-color: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px; }
+        .btn-add-stamp:disabled { background-color: #ccc; cursor: not-allowed; }
         .auth-box { max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
         .hidden { display: none !important; }
         .btn-wallet-mgmt { background-color: #6c757d; color: white; padding: 5px 10px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; margin-top: 5px; }
-
-        /* Modal Wallet */
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:100; }
         .modal-box { background:white; padding:20px; border-radius:8px; width:350px; max-width: 90%; text-align:left; }
         .modal-box h3 { margin-top: 0; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .wallet-item { background: #f9f9f9; padding: 10px; border-radius: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        .badge-vis { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; color: white; }
+        .badge-pub { background: #28a745; } .badge-priv { background: #ffc107; color: black; }
     </style>
 </head>
 <body>
@@ -56,7 +57,7 @@
     </div>
 
     <div id="appView" class="container hidden">
-        <span class="version-tag">v4.0.0</span>
+        <span class="version-tag">v5.0.0</span>
         <h1 id="tituloNegocio">Cargando panel...</h1>
         
         <h2>🎨 Personalización Visual</h2>
@@ -94,9 +95,10 @@
 
         <h2>Crear Premio</h2>
         <div class="form-row">
-            <div><label>Nombre Premio:</label><input type="text" id="premioNombre" placeholder="Café Gratis"></div>
+            <div style="flex:2;"><label>Nombre Premio:</label><input type="text" id="premioNombre" placeholder="Café Gratis"></div>
             <div><label>Sellos Totales:</label><input type="number" id="premioSellos" placeholder="5" min="1"></div>
             <div><label>Iniciales:</label><input type="number" id="premioIniciales" placeholder="1" min="0" value="0"></div>
+            <div><label>Visibilidad:</label><select id="premioVisibilidad"><option value="publico">Público (Aparece en todas las billeteras)</option><option value="privado">Privado (Se envía individual)</option></select></div>
         </div>
         <div class="form-row">
             <div><label>Vigencia Desde:</label><input type="date" id="premioInicio"></div>
@@ -106,20 +108,19 @@
 
         <h2>Premios Activos</h2>
         <table>
-            <thead><tr><th>Premio</th><th>Vigencia</th><th>Enlace Cliente</th><th>Distribución</th><th>Acción</th></tr></thead>
+            <thead><tr><th>Premio</th><th>Visibilidad</th><th>Vigencia</th><th>Enlace</th><th>Acción</th></tr></thead>
             <tbody id="tablaPremios"><tr><td colspan="5">Cargando...</td></tr></tbody>
         </table>
 
         <h2>🛒 Gestión de Clientes (CRM)</h2>
         <button onclick="descargarCSV()" style="background-color:#17a2b8; margin-bottom:10px;">Descargar CSV</button>
         <table>
-            <thead><tr><th>Datos Cliente</th><th>Tarjetas Activas</th><th>Marketing</th><th>Acción</th></tr></thead>
+            <thead><tr><th>Datos Cliente</th><th>Tarjetas Activas (Sincronizado)</th><th>Marketing</th><th>Acción</th></tr></thead>
             <tbody id="tablaClientes"><tr><td colspan="4">Cargando...</td></tr></tbody>
         </table>
         <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px; width:auto; padding:5px 10px; float:right;">Cerrar Sesión</button>
     </div>
 
-    <!-- Modal Gestión Billetera -->
     <div id="walletModal" class="modal-overlay hidden">
         <div class="modal-box">
             <h3>Gestión de Billetera</h3>
@@ -128,7 +129,7 @@
             <h4>Premios Actuales</h4>
             <div id="modalCardsList"><p>Cargando...</p></div>
 
-            <h4>Enviar Nuevo Premio</h4>
+            <h4>Enviar Premio Privado</h4>
             <select id="modalPremioSelect" style="margin-bottom: 10px;"></select>
             <button class="btn-success" onclick="enviarPremioIndividual()" style="width:100%;">Enviar a este Cliente</button>
             
@@ -175,9 +176,7 @@
                             await signOut(auth);
                             return;
                         }
-                        if (!data.ownerUid) {
-                            await setDoc(docRef, { ownerUid: user.uid }, { merge: true });
-                        }
+                        if (!data.ownerUid) { await setDoc(docRef, { ownerUid: user.uid }, { merge: true }); }
                         document.getElementById('authView').classList.add('hidden');
                         document.getElementById('appView').classList.remove('hidden');
                         cargarPremios();
@@ -187,11 +186,7 @@
                     document.getElementById('authView').classList.remove('hidden');
                     document.getElementById('appView').classList.add('hidden');
                     const docSnap = await getDoc(docRef);
-                    if (docSnap.exists() && docSnap.data().ownerUid) {
-                        mostrarLogin();
-                    } else {
-                        mostrarRegistro();
-                    }
+                    if (docSnap.exists() && docSnap.data().ownerUid) { mostrarLogin(); } else { mostrarRegistro(); }
                 }
             });
         };
@@ -208,17 +203,8 @@
 
         window.mostrarLogin = function() { document.getElementById('loginFormBox').classList.remove('hidden'); document.getElementById('registerFormBox').classList.add('hidden'); }
         window.mostrarRegistro = function() { document.getElementById('registerFormBox').classList.remove('hidden'); document.getElementById('loginFormBox').classList.add('hidden'); }
-        window.login = async function() {
-            const email = document.getElementById('loginEmail').value;
-            const pass = document.getElementById('loginPass').value;
-            try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error: " + e.message); }
-        }
-        window.registrar = async function() {
-            const email = document.getElementById('regEmail').value;
-            const pass = document.getElementById('regPass').value;
-            if(!email || !pass) return alert("Completa los campos.");
-            try { await createUserWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error al registrar: " + e.message); }
-        }
+        window.login = async function() { const email = document.getElementById('loginEmail').value; const pass = document.getElementById('loginPass').value; try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error: " + e.message); } }
+        window.registrar = async function() { const email = document.getElementById('regEmail').value; const pass = document.getElementById('regPass').value; if(!email || !pass) return alert("Completa los campos."); try { await createUserWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error al registrar: " + e.message); } }
         window.cerrarSesion = async function() { await signOut(auth); }
         window.copiarLink = function(elementId) { navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => alert('¡Link copiado!')); }
 
@@ -229,27 +215,21 @@
             let diseno = { colorFondo, colorSello };
             if (fileInput.files[0]) {
                 const reader = new FileReader();
-                reader.onload = async function(e) {
-                    diseno.logo = e.target.result; 
-                    await setDoc(docRef, { diseno }, { merge: true });
-                    alert("¡Diseño y logo guardados!");
-                };
+                reader.onload = async function(e) { diseno.logo = e.target.result; await setDoc(docRef, { diseno }, { merge: true }); alert("¡Diseño y logo guardados!"); };
                 reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                await setDoc(docRef, { diseno }, { merge: true });
-                alert("¡Colores guardados!");
-            }
+            } else { await setDoc(docRef, { diseno }, { merge: true }); alert("¡Colores guardados!"); }
         }
 
         window.crearPremio = async function() {
             const nombre = document.getElementById('premioNombre').value;
             const sellos = parseInt(document.getElementById('premioSellos').value);
             const iniciales = parseInt(document.getElementById('premioIniciales').value) || 0;
+            const visibilidad = document.getElementById('premioVisibilidad').value;
             const inicio = document.getElementById('premioInicio').value;
             const fin = document.getElementById('premioFin').value;
             if(!nombre || !sellos || !inicio || !fin) return alert("Completa todos los campos.");
             try {
-                await addDoc(collection(db, "negocios", negocioId, "premios"), { nombre, sellosRequeridos: sellos, sellosIniciales: iniciales, vigenciaInicio: inicio, vigenciaFin: fin });
+                await addDoc(collection(db, "negocios", negocioId, "premios"), { nombre, sellosRequeridos: sellos, sellosIniciales: iniciales, vigenciaInicio: inicio, vigenciaFin: fin, visibilidad });
                 document.getElementById('premioNombre').value = ''; document.getElementById('premioSellos').value = ''; document.getElementById('premioIniciales').value = '0';
                 document.getElementById('premioInicio').value = ''; document.getElementById('premioFin').value = '';
                 cargarPremios();
@@ -258,28 +238,10 @@
 
         window.eliminarPremio = async function(id) { if(confirm("¿Eliminar premio?")) { await deleteDoc(doc(db, "negocios", negocioId, "premios", id)); cargarPremios(); } }
 
-        // NUEVO: Enviar a todos los clientes
-        window.enviarATodos = async function(premioId, iniciales) {
-            if(!confirm("¿Enviar este premio a TODOS los clientes?")) return;
-            try {
-                const clientesSnap = await getDocs(collection(db, "negocios", negocioId, "clientes"));
-                const batch = writeBatch(db);
-                
-                clientesSnap.forEach(cDoc => {
-                    const cardRef = doc(db, "negocios", negocioId, "clientes", cDoc.id, "tarjetas", premioId);
-                    batch.set(cardRef, { sellos: iniciales || 0 }, { merge: true });
-                });
-                
-                await batch.commit();
-                alert("¡Premio enviado a todas las billeteras!");
-                cargarClientes();
-            } catch(e) { alert("Error al enviar masivamente."); }
-        }
-
         async function cargarPremios() {
             const tbody = document.getElementById('tablaPremios');
             tbody.innerHTML = '';
-            premiosMap = {}; // Reset map
+            premiosMap = {};
             const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "premios"));
             if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="5">No hay premios.</td></tr>'; return; }
             querySnapshot.forEach((docSnap) => {
@@ -287,15 +249,8 @@
                 const pId = docSnap.id;
                 premiosMap[pId] = p;
                 const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${pId}`;
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${p.nombre}</strong> (${p.sellosIniciales}/${p.sellosRequeridos})</td>
-                        <td>${p.vigenciaInicio} al ${p.vigenciaFin}</td>
-                        <td><a href="${link}" target="_blank">Link de Activación</a></td>
-                        <td><button class="btn-success" onclick="enviarATodos('${pId}', ${p.sellosIniciales})">Enviar a Todos</button></td>
-                        <td><button class="btn-danger" onclick="eliminarPremio('${pId}')">Eliminar</button></td>
-                    </tr>
-                `;
+                const visBadge = p.visibilidad === 'privado' ? '<span class="badge-vis badge-priv">Privado</span>' : '<span class="badge-vis badge-pub">Público</span>';
+                tbody.innerHTML += `<tr><td><strong>${p.nombre}</strong> (${p.sellosIniciales}/${p.sellosRequeridos})</td><td>${visBadge}</td><td>${p.vigenciaInicio} al ${p.vigenciaFin}</td><td><a href="${link}" target="_blank">Activar</a></td><td><button class="btn-danger" onclick="eliminarPremio('${pId}')">Eliminar</button></td></tr>`;
             });
         }
 
@@ -317,23 +272,13 @@
                         const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
                         const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
                         if(t.codigoRedencion) {
-                            tarjetasHtml += `<div class="card-info"><span>🏆 ${pNombre}: Cód ${t.codigoRedencion}</span></div>`;
+                            tarjetasHtml += `<div class="card-info"><span>🏆 ${pNombre} - Cód: ${t.codigoRedencion}</span><button class="btn-add-stamp" disabled>+1</button></div>`;
                         } else {
                             tarjetasHtml += `<div class="card-info"><span>⭐ ${pNombre}: ${t.sellos || 0}/${pTotal}</span><button class="btn-add-stamp" onclick="sumarSelloManual('${id}', '${tDoc.id}', ${pTotal})">+1</button></div>`;
                         }
                     }
                 }
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${c.nombre}</strong><br><small>${c.contacto}</small><br><small>📱 ${c.telefono || 'N/A'}</small></td>
-                        <td>${tarjetasHtml}</td>
-                        <td><input type="text" placeholder="Msg..." id="msg-${id}" style="margin-bottom:5px;"><button class="btn-wa" style="width:100%;" onclick="enviarWhatsApp('${id}', '${c.telefono}')">WhatsApp</button></td>
-                        <td>
-                            <button class="btn-wallet-mgmt" onclick="abrirModalBilletera('${id}', '${c.nombre}')">Gestionar Billetera</button>
-                            <button class="btn-danger" style="margin-top:5px; width:100%; padding:5px;" onclick="eliminarCliente('${id}')">Eliminar Cliente</button>
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML += `<tr><td><strong>${c.nombre}</strong><br><small>${c.contacto}</small><br><small>📱 ${c.telefono || 'N/A'}</small></td><td>${tarjetasHtml}</td><td><input type="text" placeholder="Msg..." id="msg-${id}" style="margin-bottom:5px;"><button class="btn-wa" style="width:100%;" onclick="enviarWhatsApp('${id}', '${c.telefono}')">WhatsApp</button></td><td><button class="btn-wallet-mgmt" onclick="abrirModalBilletera('${id}', '${c.nombre}')">Gestionar Billetera</button><button class="btn-danger" style="margin-top:5px; width:100%; padding:5px;" onclick="eliminarCliente('${id}')">Eliminar</button></td></tr>`;
             }
         }
 
@@ -349,12 +294,7 @@
             } catch(e) { alert("Error."); }
         }
 
-        window.enviarWhatsApp = function(id, telefono) {
-            if(!telefono) return alert("Sin teléfono.");
-            const msg = document.getElementById('msg-'+id).value;
-            const url = `https://wa.me/${telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`;
-            window.open(url, '_blank');
-        }
+        window.enviarWhatsApp = function(id, telefono) { if(!telefono) return alert("Sin teléfono."); const msg = document.getElementById('msg-'+id).value; const url = `https://wa.me/${telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`; window.open(url, '_blank'); }
 
         window.validarRedencion = async function() {
             const code = document.getElementById('inputRedencion').value.trim();
@@ -367,10 +307,7 @@
                     for (const tDoc of tarjetasSnap.docs) {
                         if(tDoc.data().codigoRedencion === code) {
                             await deleteDoc(doc(db, "negocios", negocioId, "clientes", id, "tarjetas", tDoc.id));
-                            alert("¡Premio canjeado!");
-                            document.getElementById('inputRedencion').value = '';
-                            cargarClientes();
-                            return;
+                            alert("¡Premio canjeado!"); document.getElementById('inputRedencion').value = ''; cargarClientes(); return;
                         }
                     }
                 }
@@ -380,82 +317,59 @@
 
         window.eliminarCliente = async function(id) { if(confirm("¿Eliminar?")) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id)); cargarClientes(); } }
 
-        window.descargarCSV = function() {
-            if(clientesData.length === 0) return alert("Sin clientes.");
-            let csv = "Nombre,Email,Telefono,FechaNacimiento\n";
-            clientesData.forEach(c => { csv += `${c.nombre},${c.contacto},${c.telefono || ''},${c.fechaNacimiento || ''}\n`; });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'clientes.csv';
-            link.click();
-        }
+        window.descargarCSV = function() { if(clientesData.length === 0) return alert("Sin clientes."); let csv = "Nombre,Email,Telefono,FechaNacimiento\n"; clientesData.forEach(c => { csv += `${c.nombre},${c.contacto},${c.telefono || ''},${c.fechaNacimiento || ''}\n`; }); const blob = new Blob([csv], { type: 'text/csv' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'clientes.csv'; link.click(); }
 
-        // LÓGICA MODAL BILLETERA
         window.abrirModalBilletera = async function(clientId, clientName) {
             currentModalClientId = clientId;
             document.getElementById('modalClientName').innerText = clientName;
-            
             const select = document.getElementById('modalPremioSelect');
             select.innerHTML = '';
+            let privCount = 0;
             for(let id in premiosMap) {
-                select.innerHTML += `<option value="${id}">${premiosMap[id].nombre}</option>`;
+                if(premiosMap[id].visibilidad === 'privado') {
+                    select.innerHTML += `<option value="${id}">${premiosMap[id].nombre}</option>`;
+                    privCount++;
+                }
             }
-
+            if(privCount === 0) select.innerHTML = '<option value="" disabled selected>No tienes premios privados</option>';
             await cargarModalCards(clientId);
             document.getElementById('walletModal').classList.remove('hidden');
         }
 
-        window.closeWalletModal = function() {
-            document.getElementById('walletModal').classList.add('hidden');
-            currentModalClientId = null;
-        }
+        window.closeWalletModal = function() { document.getElementById('walletModal').classList.add('hidden'); currentModalClientId = null; }
 
         async function cargarModalCards(clientId) {
             const listDiv = document.getElementById('modalCardsList');
             listDiv.innerHTML = '<p>Cargando...</p>';
             const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", clientId, "tarjetas"));
-            
-            if(tarjetasSnap.empty) {
-                listDiv.innerHTML = '<p>El cliente no tiene tarjetas.</p>';
-                return;
-            }
-
+            if(tarjetasSnap.empty) { listDiv.innerHTML = '<p>El cliente no tiene tarjetas.</p>'; return; }
             listDiv.innerHTML = '';
             for(const tDoc of tarjetasSnap.docs) {
                 const t = tDoc.data();
                 const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
-                listDiv.innerHTML += `
-                    <div class="wallet-item">
-                        <span>⭐ ${pNombre} (${t.sellos || 0})</span>
-                        <button class="btn-danger" style="width:auto; padding:2px 5px; font-size:10px; margin:0;" onclick="eliminarTarjetaCliente('${tDoc.id}')">Eliminar</button>
-                    </div>
-                `;
+                const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
+                let status = t.codigoRedencion ? `🏆 LISTO (Cód: ${t.codigoRedencion})` : `⭐ En progreso: ${t.sellos || 0}/${pTotal}`;
+                listDiv.innerHTML += `<div class="wallet-item"><span>${pNombre} - ${status}</span><button class="btn-danger" style="width:auto; padding:2px 5px; font-size:10px; margin:0;" onclick="eliminarTarjetaCliente('${tDoc.id}')">Eliminar</button></div>`;
             }
         }
 
         window.eliminarTarjetaCliente = async function(cardId) {
             if(!currentModalClientId) return;
-            if(confirm("¿Eliminar esta tarjeta de la billetera del cliente?")) {
+            if(confirm("¿Eliminar esta tarjeta?")) {
                 await deleteDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", cardId));
-                await cargarModalCards(currentModalClientId);
-                cargarClientes(); // Refrescar tabla principal
+                await cargarModalCards(currentModalClientId); cargarClientes();
             }
         }
 
         window.enviarPremioIndividual = async function() {
             if(!currentModalClientId) return;
             const selectedPremioId = document.getElementById('modalPremioSelect').value;
+            if(!selectedPremioId) return alert("Selecciona un premio válido.");
             const iniciales = premiosMap[selectedPremioId].sellosIniciales || 0;
-            
             try {
                 await setDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", selectedPremioId), { sellos: iniciales }, { merge: true });
-                alert("¡Premio enviado a la billetera del cliente!");
-                await cargarModalCards(currentModalClientId);
-                cargarClientes();
-            } catch(e) {
-                alert("Error al enviar premio.");
-            }
+                alert("¡Premio privado enviado!"); await cargarModalCards(currentModalClientId); cargarClientes();
+            } catch(e) { alert("Error al enviar premio."); }
         }
     </script>
 </body>
