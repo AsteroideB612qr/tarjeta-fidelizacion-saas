@@ -4,56 +4,36 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mi Billetera</title>
     <style>
-        :root {
-            --primary-color: #1a1a1a;
-            --stamp-color: #ffc107;
-        }
-        body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 400px; margin: auto; position: relative; }
-        .version-tag { position: absolute; top: -15px; right: 0; background: #007bff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; }
+        :root { --primary-color: #1a1a1a; --stamp-color: #ffc107; }
+        body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
+        .container { max-width: 400px; margin: auto; padding: 20px; position: relative; }
+        .version-tag { position: absolute; top: 25px; right: 25px; background: #007bff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; z-index: 10; }
         
-        /* Nueva Tarjeta Premium */
-        .card-premium { 
-            background: var(--primary-color); 
-            border-radius: 20px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
-            margin-bottom: 25px; 
-            overflow: hidden; 
-            color: white;
-            position: relative;
-        }
-        .card-header { padding: 20px; display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.2); }
-        .card-logo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: white; }
-        .card-titles h1 { font-size: 18px; margin: 0; color: white; }
-        .card-titles p { font-size: 12px; margin: 5px 0 0; opacity: 0.8; }
+        /* Encabezado Global */
+        .wallet-header { text-align: center; margin-bottom: 30px; }
+        .wallet-logo { width: 80px; height: 80px; border-radius: 20px; object-fit: cover; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px; }
+        .wallet-name { font-size: 22px; font-weight: bold; color: #333; margin: 0; }
+        
+        /* Tarjeta Premio */
+        .card-premium { background: var(--primary-color); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 25px; overflow: hidden; color: white; }
         .card-body { padding: 25px 20px; text-align: center; }
+        .card-body h2 { color: white; margin-top: 0; font-size: 18px; }
         .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 20px 0; }
-        .stamp { 
-            width: 45px; height: 45px; border-radius: 50%; 
-            border: 2px solid rgba(255,255,255,0.3); 
-            display: flex; align-items: center; justify-content: center; font-size: 20px; 
-            transition: all 0.3s ease;
-        }
+        .stamp { width: 45px; height: 45px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.3s ease; }
         .filled { background-color: var(--stamp-color); border-color: var(--stamp-color); color: #000; transform: scale(1.05); }
         .vigencia { font-size: 11px; opacity: 0.6; margin-top: 10px; }
         .codigo-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; font-weight: bold; font-size: 28px; letter-spacing: 4px; margin-top: 15px; color: var(--stamp-color); }
-        
-        .btn-scan { 
-            width: 100%; padding: 12px; background-color: var(--stamp-color); color: #000; 
-            border: none; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 15px; 
-        }
+        .btn-scan { width: 100%; padding: 12px; background-color: var(--stamp-color); color: #000; border: none; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 15px; }
         
         /* Auth Forms */
         .auth-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
-        h2 { font-size: 20px; color: #333; margin-top: 0; }
         input { padding: 12px; margin: 8px 0; width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
         button { padding: 12px; width: 100%; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; }
-        button.btn-blue { background-color: #007bff; } button.btn-gray { background-color: #6c757d; }
+        button.btn-blue { background-color: #007bff; }
         .tabs { display: flex; margin-bottom: 20px; background: #f1f1f1; border-radius: 8px; padding: 5px; }
         .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 6px; color: #666; font-size: 14px; }
         .tab.active { background: white; color: #007bff; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -64,14 +44,13 @@
         @keyframes pop { 0% { transform: scale(0) rotate(0deg); } 100% { transform: scale(1) rotate(360deg); } }
         .confetti { width: 12px; height: 12px; background-color: var(--stamp-color); position: absolute; animation: fall 2s linear infinite; }
         @keyframes fall { to { transform: translateY(100vh); } }
-        
         #reader { width: 100%; border-radius: 12px; overflow: hidden; margin-top: 15px; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v2.0.0</span>
+        <span class="version-tag">v3.0.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -79,39 +58,36 @@
                 <div class="tab" id="tabRegistro" onclick="mostrarRegistro()">Registrarse</div>
             </div>
             <div id="loginBox">
-                <h2>¡Hola de nuevo!</h2>
                 <input type="email" id="loginEmail" placeholder="Tu Email">
                 <input type="password" id="loginPass" placeholder="Tu Contraseña">
                 <button onclick="login()">Iniciar Sesión</button>
             </div>
             <div id="registerBox" class="hidden">
-                <h2>Crear Cuenta</h2>
                 <input type="text" id="regNombre" placeholder="Tu nombre">
                 <input type="email" id="regEmail" placeholder="Tu Email">
                 <input type="password" id="regPass" placeholder="Tu Contraseña">
-                <input type="tel" id="regTel" placeholder="Celular (Ej: 5212345678)">
+                <input type="tel" id="regTel" placeholder="Celular">
                 <input type="date" id="regNac" title="Fecha de nacimiento">
                 <button class="btn-blue" onclick="registrar()">Registrarme</button>
             </div>
         </div>
 
         <div id="completarPerfilForm" class="auth-card hidden">
-            <h2>¡Bienvenido!</h2>
             <p>Tu cuenta existe, pero necesitas dejar tus datos para <strong id="negocioNombrePerfil"></strong>:</p>
             <input type="text" id="cpNombre" placeholder="Tu nombre">
-            <input type="tel" id="cpTel" placeholder="Celular (Ej: 5212345678)">
+            <input type="tel" id="cpTel" placeholder="Celular">
             <input type="date" id="cpNac" title="Fecha de nacimiento">
             <button onclick="vincularNegocio()">Vincular mi cuenta</button>
         </div>
 
         <div id="walleView" class="hidden">
+            <div id="walletHeader"></div>
             <div id="tarjetasContainer"></div>
             <div id="reader" class="hidden"></div>
             <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px; background: transparent; color: #666; font-weight: normal;">Cerrar Sesión</button>
         </div>
     </div>
 
-    <!-- Animación Mágica -->
     <div id="magicOverlay">
         <div class="star-anim">★</div>
         <h2 style="color:white; margin-top:30px; letter-spacing: 1px;">¡Sello Agregado!</h2>
@@ -145,7 +121,6 @@
                         logoUrl = data.diseno.logo || "";
                         colorFondo = data.diseno.colorFondo || "#1a1a1a";
                         colorSello = data.diseno.colorSello || "#ffc107";
-                        // Aplicar colores dinámicamente
                         document.documentElement.style.setProperty('--primary-color', colorFondo);
                         document.documentElement.style.setProperty('--stamp-color', colorSello);
                     }
@@ -164,10 +139,9 @@
                     } else {
                         document.getElementById('completarPerfilForm').classList.add('hidden');
                         document.getElementById('walleView').classList.remove('hidden');
+                        renderHeader(); // Renderizar cabecera
                         await cargarTarjetas();
-                        if(accion === 'sello') {
-                            sumarSelloDirecto(); 
-                        }
+                        if(accion === 'sello') { sumarSelloDirecto(); }
                     }
                 } else {
                     document.getElementById('authForm').classList.remove('hidden');
@@ -177,6 +151,14 @@
                 }
             });
         };
+
+        function renderHeader() {
+            const headerHtml = `
+                ${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}
+                <h1 class="wallet-name">${nombreNegocio}</h1>
+            `;
+            document.getElementById('walletHeader').innerHTML = headerHtml;
+        }
 
         window.mostrarLogin = function() { document.getElementById('tabLogin').classList.add('active'); document.getElementById('tabRegistro').classList.remove('active'); document.getElementById('loginBox').classList.remove('hidden'); document.getElementById('registerBox').classList.add('hidden'); }
         window.mostrarRegistro = function() { document.getElementById('tabRegistro').classList.add('active'); document.getElementById('tabLogin').classList.remove('active'); document.getElementById('registerBox').classList.remove('hidden'); document.getElementById('loginBox').classList.add('hidden'); }
@@ -197,7 +179,7 @@
                 const cred = await createUserWithEmailAndPassword(auth, email, pass);
                 await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { nombre, contacto: email, telefono: tel, fechaNacimiento: nac });
             } catch(e) {
-                if(e.code === 'auth/email-already-in-use') { alert("Este correo ya está registrado. Inicia sesión para vincularlo."); mostrarLogin(); } else { alert("Error: " + e.message); }
+                if(e.code === 'auth/email-already-in-use') { alert("Este correo ya está registrado. Inicia sesión."); mostrarLogin(); } else { alert("Error: " + e.message); }
             }
         }
         window.vincularNegocio = async function() {
@@ -208,6 +190,7 @@
             await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre, contacto: auth.currentUser.email, telefono: tel, fechaNacimiento: nac });
             document.getElementById('completarPerfilForm').classList.add('hidden');
             document.getElementById('walleView').classList.remove('hidden');
+            renderHeader();
             await cargarTarjetas();
             if(accion === 'sello') sumarSelloDirecto();
         }
@@ -247,23 +230,15 @@
                 if (expirado) {
                     accionHTML = '<p style="color:#ff6b6b; font-weight:bold;">❌ Promoción expirada</p>';
                 } else if (completado) {
-                    accionHTML = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${tarjetaData.codigoRedencion}</div><p style="font-size:12px; opacity:0.7; margin-top:5px;">Muestra este código al cajero.</p>`;
+                    accionHTML = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${tarjetaData.codigoRedencion}</div>`;
                 } else {
                     accionHTML = `<p style="font-size:14px; opacity:0.8;">Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p><button class="btn-scan" onclick="iniciarEscaneoQR('${pId}')">Escanear para sumar Sello</button>`;
                 }
 
-                const logoHtml = logoUrl ? `<img src="${logoUrl}" class="card-logo" alt="Logo">` : `<div class="card-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333;">${nombreNegocio.charAt(0)}</div>`;
-
                 container.innerHTML += `
                     <div class="card-premium">
-                        <div class="card-header">
-                            ${logoHtml}
-                            <div class="card-titles">
-                                <h1>${nombreNegocio}</h1>
-                                <p>${premio.nombre}</p>
-                            </div>
-                        </div>
                         <div class="card-body">
+                            <h2>${premio.nombre}</h2>
                             <div class="stamps">${htmlStamps}</div>
                             <div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>
                             ${accionHTML}
@@ -273,7 +248,6 @@
             }
         }
 
-        // --- LÓGICA MAGIC NFC / QR EXTERNO (Automático) ---
         async function sumarSelloDirecto() {
             const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
             let activeCards = [];
@@ -284,21 +258,17 @@
                     activeCards.push({pId, nombre: premio.nombre});
                 }
             }
-
             if (activeCards.length === 0) { limpiarAccionURL(); return; }
-
             let targetCardId;
-            if (activeCards.length === 1) {
-                targetCardId = activeCards[0].pId;
-            } else {
-                let opciones = "Tienes varias tarjetas activas. ¿A cuál sumar el sello?\n";
+            if (activeCards.length === 1) { targetCardId = activeCards[0].pId; } 
+            else {
+                let opciones = "Tienes varias tarjetas. ¿A cuál sumar el sello?\n";
                 activeCards.forEach((c, i) => opciones += `${i+1}. ${c.nombre}\n`);
                 const seleccion = prompt(opciones);
                 const index = parseInt(seleccion) - 1;
                 if (isNaN(index) || index < 0 || index >= activeCards.length) { limpiarAccionURL(); return; }
                 targetCardId = activeCards[index].pId;
             }
-
             await sumarSello(targetCardId);
             mostrarAnimacionMagica();
             limpiarAccionURL();
@@ -315,34 +285,24 @@
                 c.style.backgroundColor = [colorSello, colorFondo, '#ffffff'][Math.floor(Math.random()*3)];
                 overlay.appendChild(c);
             }
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                overlay.querySelectorAll('.confetti').forEach(c => c.remove());
-            }, 2500);
+            setTimeout(() => { overlay.style.display = 'none'; overlay.querySelectorAll('.confetti').forEach(c => c.remove()); }, 2500);
         }
 
         function limpiarAccionURL() { history.replaceState(null, null, window.location.pathname + `?id=${negocioId}`); }
 
-        // --- LÓGICA ESCANER QR INTERNO (Desde la Billetera) ---
         window.iniciarEscaneoQR = function(pId) {
             const readerElement = document.getElementById('reader');
             readerElement.classList.remove('hidden');
-            
             const html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: {width: 200, height: 200} },
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width: 200, height: 200} },
                 async (decodedText) => {
                     html5QrCode.stop();
                     readerElement.classList.add('hidden');
                     if(decodedText.includes(`id=${negocioId}&accion=sello`)) {
                         await sumarSello(pId);
                         mostrarAnimacionMagica();
-                    } else {
-                        alert("QR no pertenece a este negocio.");
-                    }
-                },
-                (err) => {}
+                    } else { alert("QR no pertenece a este negocio."); }
+                }, (err) => {}
             ).catch(err => alert("Error al abrir cámara: " + err));
         }
 
@@ -352,7 +312,6 @@
                 for(const docSnap of premiosSnap.docs) {
                     const premio = docSnap.data(); const pId = docSnap.id;
                     if(pIdForzado && pId !== pIdForzado) continue;
-
                     const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                     const tarjetaSnap = await getDoc(tarjetaRef);
                     if(tarjetaSnap.exists() && tarjetaSnap.data().sellos < premio.sellosRequeridos) {
