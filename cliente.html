@@ -9,44 +9,84 @@
     <title>Mi Billetera</title>
     <style>
         :root { --primary-color: #1a1a1a; --stamp-color: #ffc107; }
-        body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
-        .container { max-width: 400px; margin: auto; padding: 20px; position: relative; }
+        body { 
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif; 
+            background: #f0f4f8;
+            background-image: radial-gradient(circle at 15% 15%, rgba(0, 123, 255, 0.05) 0%, transparent 40%), radial-gradient(circle at 85% 85%, rgba(255, 193, 7, 0.05) 0%, transparent 40%);
+            min-height: 100vh; margin: 0; padding: 0; color: #333;
+        }
+        .container { max-width: 400px; margin: auto; padding: 25px 20px; position: relative; }
         .version-tag { position: absolute; top: 25px; right: 25px; background: #007bff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; z-index: 10; }
-        .wallet-header { text-align: center; margin-bottom: 30px; }
-        .wallet-logo { width: 80px; height: 80px; border-radius: 20px; object-fit: cover; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px; }
-        .wallet-name { font-size: 22px; font-weight: bold; color: #333; margin: 0; }
-        .welcome-msg { font-size: 16px; color: #666; margin-top: 5px; }
-        .socials-row { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
-        .socials-row a { text-decoration: none; font-size: 24px; }
-        .card-premium { background: var(--primary-color); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 25px; overflow: hidden; color: white; }
-        .card-body { padding: 25px 20px; text-align: center; }
-        .card-body h2 { color: white; margin-top: 0; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 20px 0; }
-        .stamp { width: 45px; height: 45px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.3s ease; }
-        .filled { background-color: var(--stamp-color); border-color: var(--stamp-color); color: #000; transform: scale(1.05); }
-        .vigencia { font-size: 11px; opacity: 0.6; margin-top: 10px; }
-        .codigo-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; font-weight: bold; font-size: 28px; letter-spacing: 4px; margin-top: 15px; color: var(--stamp-color); }
-        .btn-scan { width: 100%; padding: 12px; background-color: var(--stamp-color); color: #000; border: none; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 15px; }
-        .badge-pub { background: #28a745; color: white; font-size: 10px; padding: 2px 6px; border-radius: 8px; vertical-align: middle; }
-        .auth-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
-        input { padding: 12px; margin: 8px 0; width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        button { padding: 12px; width: 100%; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        
+        /* Header */
+        .wallet-header { text-align: center; margin-bottom: 35px; }
+        .wallet-logo { 
+            width: 90px; height: 90px; border-radius: 24px; object-fit: cover; 
+            background: white; box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.05); 
+            margin-bottom: 12px; border: 2px solid white; 
+        }
+        .wallet-name { font-size: 22px; font-weight: bold; color: #1a1a1a; margin: 0; }
+        .welcome-msg { font-size: 15px; color: #666; margin-top: 6px; font-weight: 500; }
+        .socials-row { display: flex; justify-content: center; gap: 12px; margin-top: 18px; }
+        .socials-row a { 
+            display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; 
+            border-radius: 50%; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
+            transition: transform 0.2s ease; text-decoration: none;
+        }
+        .socials-row a:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+        
+        /* Tarjeta Premio */
+        .card-premium { 
+            background: var(--primary-color); border-radius: 24px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.05) inset; 
+            margin-bottom: 30px; overflow: hidden; color: white; position: relative;
+        }
+        .card-premium::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%); pointer-events: none;
+        }
+        .card-body { padding: 30px 25px; text-align: center; position: relative; z-index: 1; }
+        .card-body h2 { color: white; margin-top: 0; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; }
+        .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 25px 0; }
+        .stamp { 
+            width: 45px; height: 45px; border-radius: 50%; 
+            background: rgba(255,255,255,0.1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); 
+            display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.3s ease; 
+        }
+        .filled { 
+            background-color: var(--stamp-color); color: #000; transform: scale(1.05); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.4); 
+        }
+        .vigencia { font-size: 11px; opacity: 0.5; margin-top: 15px; font-weight: 500; }
+        .codigo-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; font-weight: bold; font-size: 28px; letter-spacing: 4px; margin-top: 15px; color: var(--stamp-color); backdrop-filter: blur(5px); }
+        .btn-scan { width: 100%; padding: 14px; background-color: var(--stamp-color); color: #000; border: none; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; transition: opacity 0.2s; }
+        .btn-scan:active { opacity: 0.8; }
+        .badge-pub { background: rgba(40, 167, 69, 0.2); color: #28a745; font-size: 10px; padding: 3px 8px; border-radius: 8px; vertical-align: middle; border: 1px solid rgba(40, 167, 69, 0.3); }
+        
+        /* Auth */
+        .auth-card { background: white; padding: 35px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
+        input { padding: 14px; margin: 8px 0; width: 100%; box-sizing: border-box; border: 1px solid #e1e5ea; border-radius: 12px; font-size: 15px; transition: border 0.2s; }
+        input:focus { border-color: #007bff; outline: none; }
+        button { padding: 14px; width: 100%; background-color: #007bff; color: white; border: none; border-radius: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 15px; transition: background 0.2s; }
         button.btn-blue { background-color: #007bff; }
-        .tabs { display: flex; margin-bottom: 20px; background: #f1f1f1; border-radius: 8px; padding: 5px; }
-        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 6px; color: #666; font-size: 14px; }
-        .tab.active { background: white; color: #007bff; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #magicOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; display:none; }
+        .tabs { display: flex; margin-bottom: 20px; background: #f4f7f9; border-radius: 12px; padding: 5px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 8px; color: #666; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .tab.active { background: white; color: #007bff; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        
+        /* Animación */
+        #magicOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(10,10,10,0.92); backdrop-filter: blur(8px); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; display:none; }
         .star-anim { font-size: 120px; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; color: var(--stamp-color); }
         @keyframes pop { 0% { transform: scale(0) rotate(0deg); } 100% { transform: scale(1) rotate(360deg); } }
         .confetti { width: 12px; height: 12px; background-color: var(--stamp-color); position: absolute; animation: fall 2s linear infinite; }
         @keyframes fall { to { transform: translateY(100vh); } }
-        #reader { width: 100%; border-radius: 12px; overflow: hidden; margin-top: 15px; }
+        
+        #reader { width: 100%; border-radius: 16px; overflow: hidden; margin-top: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v6.0.0</span>
+        <span class="version-tag">v7.0.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -80,13 +120,13 @@
             <div id="walletHeader"></div>
             <div id="tarjetasContainer"></div>
             <div id="reader" class="hidden"></div>
-            <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px; background: transparent; color: #666; font-weight: normal;">Cerrar Sesión</button>
+            <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px; background: transparent; color: #666; font-weight: normal; font-size: 14px;">Cerrar Sesión</button>
         </div>
     </div>
 
     <div id="magicOverlay">
         <div class="star-anim">★</div>
-        <h2 style="color:white; margin-top:30px;">¡Sello Agregado!</h2>
+        <h2 style="color:white; margin-top:30px; letter-spacing: 1px;">¡Sello Agregado!</h2>
     </div>
 
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -102,6 +142,15 @@
 
         let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
         let isExpired = true, clientName = "";
+
+        // Iconos SVG Profesionales
+        const icons = {
+            ig: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E4405F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`,
+            tk: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#000000"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z"/></svg>`,
+            fb: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.45 2.89h-2.33v6.99A10 10 0 0 0 22 12z"/></svg>`,
+            mail: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`,
+            wa: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>`
+        };
 
         window.onload = async function() {
             if (!negocioId) return alert("Enlace inválido.");
@@ -119,6 +168,25 @@
                     }
                     if(data.redes) redes = data.redes;
                     if(data.fechaVencimiento) { isExpired = new Date(data.fechaVencimiento) < new Date(); }
+                    
+                    // Configurar Icono de Acceso Directo (PWA Manifest Dinámico)
+                    if(logoUrl) {
+                        const manifest = {
+                            name: nombreNegocio, short_name: nombreNegocio, display: "standalone",
+                            background_color: "#ffffff", theme_color: colorFondo,
+                            icons: [{ src: logoUrl, sizes: "512x512", type: "image/png", purpose: "any" }]
+                        };
+                        const stringManifest = JSON.stringify(manifest);
+                        const blob = new Blob([stringManifest], {type: 'application/json'});
+                        const manifestURL = URL.createObjectURL(blob);
+                        let mLink = document.querySelector('link[rel="manifest"]');
+                        if (!mLink) { mLink = document.createElement('link'); mLink.rel = 'manifest'; document.head.appendChild(mLink); }
+                        mLink.href = manifestURL;
+                        
+                        let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
+                        if (!appleLink) { appleLink = document.createElement('link'); appleLink.rel = 'apple-touch-icon'; document.head.appendChild(appleLink); }
+                        appleLink.href = logoUrl;
+                    }
                 }
             } catch (e) { alert("Error al cargar negocio."); }
 
@@ -151,11 +219,11 @@
 
         function renderHeader() {
             let socialsHtml = '';
-            if(redes.ig) socialsHtml += `<a href="${redes.ig}" target="_blank">📸</a>`;
-            if(redes.tk) socialsHtml += `<a href="${redes.tk}" target="_blank">🎵</a>`;
-            if(redes.fb) socialsHtml += `<a href="${redes.fb}" target="_blank">👥</a>`;
-            if(redes.mail) socialsHtml += `<a href="mailto:${redes.mail}" target="_blank">✉️</a>`;
-            if(redes.wa) socialsHtml += `<a href="https://wa.me/${redes.wa.replace(/[^0-9]/g,'')}" target="_blank">💬</a>`;
+            if(redes.ig) socialsHtml += `<a href="${redes.ig}" target="_blank">${icons.ig}</a>`;
+            if(redes.tk) socialsHtml += `<a href="${redes.tk}" target="_blank">${icons.tk}</a>`;
+            if(redes.fb) socialsHtml += `<a href="${redes.fb}" target="_blank">${icons.fb}</a>`;
+            if(redes.mail) socialsHtml += `<a href="mailto:${redes.mail}" target="_blank">${icons.mail}</a>`;
+            if(redes.wa) socialsHtml += `<a href="https://wa.me/${redes.wa.replace(/[^0-9]/g,'')}" target="_blank">${icons.wa}</a>`;
             
             const headerHtml = `
                 ${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}
