@@ -57,7 +57,7 @@
     </div>
 
     <div id="appView" class="container hidden">
-        <span class="version-tag">v5.0.0</span>
+        <span class="version-tag">v5.1.0</span>
         <h1 id="tituloNegocio">Cargando panel...</h1>
         
         <h2>🎨 Personalización Visual</h2>
@@ -271,8 +271,11 @@
                         const t = tDoc.data();
                         const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
                         const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
+                        
                         if(t.codigoRedencion) {
                             tarjetasHtml += `<div class="card-info"><span>🏆 ${pNombre} - Cód: ${t.codigoRedencion}</span><button class="btn-add-stamp" disabled>+1</button></div>`;
+                        } else if (t.sellos >= pTotal) {
+                            tarjetasHtml += `<div class="card-info"><span>🏆 ${pNombre} - Cód: ?</span><button class="btn-add-stamp" disabled>+1</button></div>`;
                         } else {
                             tarjetasHtml += `<div class="card-info"><span>⭐ ${pNombre}: ${t.sellos || 0}/${pTotal}</span><button class="btn-add-stamp" onclick="sumarSelloManual('${id}', '${tDoc.id}', ${pTotal})">+1</button></div>`;
                         }
@@ -288,8 +291,18 @@
                 const cardSnap = await getDoc(cardRef);
                 if(cardSnap.exists()) {
                     let currentStamps = cardSnap.data().sellos || 0;
-                    if(currentStamps < maxSellos) { await updateDoc(cardRef, { sellos: currentStamps + 1 }); alert("¡Sello sumado!"); cargarClientes(); } 
-                    else { alert("Tarjeta completada."); }
+                    if(currentStamps < maxSellos) {
+                        let newStamps = currentStamps + 1;
+                        let data = { sellos: newStamps };
+                        if(newStamps >= maxSellos) {
+                            const code = Math.floor(1000 + Math.random() * 9000).toString();
+                            data.codigoRedencion = code;
+                        }
+                        await updateDoc(cardRef, data);
+                        alert("¡Sello sumado!");
+                        cargarClientes();
+                        if(currentModalClientId === clientId) await cargarModalCards(clientId);
+                    } else { alert("Tarjeta completada."); }
                 }
             } catch(e) { alert("Error."); }
         }
@@ -348,7 +361,10 @@
                 const t = tDoc.data();
                 const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
                 const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
-                let status = t.codigoRedencion ? `🏆 LISTO (Cód: ${t.codigoRedencion})` : `⭐ En progreso: ${t.sellos || 0}/${pTotal}`;
+                let status = '';
+                if(t.codigoRedencion) { status = `🏆 LISTO (Cód: ${t.codigoRedencion})`; } 
+                else if (t.sellos >= pTotal) { status = `🏆 LISTO (Cód: ?)`; } 
+                else { status = `⭐ En progreso: ${t.sellos || 0}/${pTotal}`; }
                 listDiv.innerHTML += `<div class="wallet-item"><span>${pNombre} - ${status}</span><button class="btn-danger" style="width:auto; padding:2px 5px; font-size:10px; margin:0;" onclick="eliminarTarjetaCliente('${tDoc.id}')">Eliminar</button></div>`;
             }
         }
