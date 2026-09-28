@@ -12,10 +12,12 @@
         input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; color: white; }
         button:hover { background-color: #0056b3; }
+        .btn-copy { background-color: #17a2b8; padding: 5px 10px; font-size: 12px; margin-left: 10px; }
+        .btn-copy:hover { background-color: #138496; }
         .btn-danger { background-color: #dc3545; padding: 5px 10px; font-size: 12px; }
         .btn-danger:hover { background-color: #c82333; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: middle; }
         th { background-color: #f8f9fa; }
         a { color: #007bff; text-decoration: none; word-break: break-all; }
     </style>
@@ -36,7 +38,7 @@
             <thead>
                 <tr>
                     <th>Nombre del Negocio</th>
-                    <th>Enlace del Panel (Para el dueño)</th>
+                    <th>Enlace del Panel</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -77,6 +79,14 @@
             }
         }
 
+        window.copiarLinkPanel = function(link) {
+            navigator.clipboard.writeText(link).then(() => {
+                alert('¡Enlace del panel copiado al portapapeles!');
+            }).catch(err => {
+                alert('Error al copiar: ' + err);
+            });
+        }
+
         async function cargarNegocios() {
             const tbody = document.getElementById('tablaNegocios');
             tbody.innerHTML = '';
@@ -98,7 +108,10 @@
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>${negocio.nombre}</strong></td>
-                        <td><a href="${linkPanel}" target="_blank">${linkPanel}</a></td>
+                        <td>
+                            <a href="${linkPanel}" target="_blank">${linkPanel}</a>
+                            <button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar Link</button>
+                        </td>
                         <td><button class="btn-danger" onclick="eliminarNegocio('${id}', '${negocio.nombre}')">Eliminar</button></td>
                     </tr>
                 `;
