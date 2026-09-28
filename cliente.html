@@ -12,24 +12,19 @@
         body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
         .container { max-width: 400px; margin: auto; padding: 20px; position: relative; }
         .version-tag { position: absolute; top: 25px; right: 25px; background: #007bff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; z-index: 10; }
-        
-        /* Encabezado Global */
         .wallet-header { text-align: center; margin-bottom: 30px; }
         .wallet-logo { width: 80px; height: 80px; border-radius: 20px; object-fit: cover; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px; }
         .wallet-name { font-size: 22px; font-weight: bold; color: #333; margin: 0; }
-        
-        /* Tarjeta Premio */
         .card-premium { background: var(--primary-color); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 25px; overflow: hidden; color: white; }
         .card-body { padding: 25px 20px; text-align: center; }
-        .card-body h2 { color: white; margin-top: 0; font-size: 18px; }
+        .card-body h2 { color: white; margin-top: 0; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 20px 0; }
         .stamp { width: 45px; height: 45px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.3s ease; }
         .filled { background-color: var(--stamp-color); border-color: var(--stamp-color); color: #000; transform: scale(1.05); }
         .vigencia { font-size: 11px; opacity: 0.6; margin-top: 10px; }
         .codigo-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; font-weight: bold; font-size: 28px; letter-spacing: 4px; margin-top: 15px; color: var(--stamp-color); }
         .btn-scan { width: 100%; padding: 12px; background-color: var(--stamp-color); color: #000; border: none; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 15px; }
-        
-        /* Auth Forms */
+        .badge-pub { background: #28a745; color: white; font-size: 10px; padding: 2px 6px; border-radius: 8px; vertical-align: middle; }
         .auth-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
         input { padding: 12px; margin: 8px 0; width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
         button { padding: 12px; width: 100%; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; }
@@ -37,8 +32,6 @@
         .tabs { display: flex; margin-bottom: 20px; background: #f1f1f1; border-radius: 8px; padding: 5px; }
         .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 6px; color: #666; font-size: 14px; }
         .tab.active { background: white; color: #007bff; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* Animación Mágica */
         #magicOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; display:none; }
         .star-anim { font-size: 120px; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; color: var(--stamp-color); }
         @keyframes pop { 0% { transform: scale(0) rotate(0deg); } 100% { transform: scale(1) rotate(360deg); } }
@@ -50,7 +43,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v4.0.0</span>
+        <span class="version-tag">v5.0.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -141,16 +134,12 @@
                         document.getElementById('walleView').classList.remove('hidden');
                         renderHeader(); 
                         await cargarTarjetas();
-                        
-                        // BLOQUEO ANTI-RECARGA: Solo sella si es la primera vez en esta sesión
                         if(accion === 'sello') {
                             const stampKey = 'stamped_' + negocioId;
                             if(sessionStorage.getItem(stampKey) !== 'true') {
-                                sessionStorage.setItem(stampKey, 'true'); // Marcamos como sellado
+                                sessionStorage.setItem(stampKey, 'true');
                                 sumarSelloDirecto(); 
-                            } else {
-                                limpiarAccionURL(); // Si recarga, solo limpia la URL, no hace nada
-                            }
+                            } else { limpiarAccionURL(); }
                         }
                     }
                 } else {
@@ -163,47 +152,15 @@
         };
 
         function renderHeader() {
-            const headerHtml = `
-                ${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}
-                <h1 class="wallet-name">${nombreNegocio}</h1>
-            `;
+            const headerHtml = `${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}<h1 class="wallet-name">${nombreNegocio}</h1>`;
             document.getElementById('walletHeader').innerHTML = headerHtml;
         }
 
         window.mostrarLogin = function() { document.getElementById('tabLogin').classList.add('active'); document.getElementById('tabRegistro').classList.remove('active'); document.getElementById('loginBox').classList.remove('hidden'); document.getElementById('registerBox').classList.add('hidden'); }
         window.mostrarRegistro = function() { document.getElementById('tabRegistro').classList.add('active'); document.getElementById('tabLogin').classList.remove('active'); document.getElementById('registerBox').classList.remove('hidden'); document.getElementById('loginBox').classList.add('hidden'); }
-        
-        window.login = async function() {
-            const email = document.getElementById('loginEmail').value;
-            const pass = document.getElementById('loginPass').value;
-            try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error: " + e.message); }
-        }
-        window.registrar = async function() {
-            const nombre = document.getElementById('regNombre').value;
-            const email = document.getElementById('regEmail').value;
-            const pass = document.getElementById('regPass').value;
-            const tel = document.getElementById('regTel').value;
-            const nac = document.getElementById('regNac').value;
-            if(!nombre || !email || !pass || !tel || !nac) return alert("Completa todos los campos.");
-            try {
-                const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { nombre, contacto: email, telefono: tel, fechaNacimiento: nac });
-            } catch(e) {
-                if(e.code === 'auth/email-already-in-use') { alert("Este correo ya está registrado. Inicia sesión."); mostrarLogin(); } else { alert("Error: " + e.message); }
-            }
-        }
-        window.vincularNegocio = async function() {
-            const nombre = document.getElementById('cpNombre').value;
-            const tel = document.getElementById('cpTel').value;
-            const nac = document.getElementById('cpNac').value;
-            if(!nombre || !tel || !nac) return alert("Completa tus datos.");
-            await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre, contacto: auth.currentUser.email, telefono: tel, fechaNacimiento: nac });
-            document.getElementById('completarPerfilForm').classList.add('hidden');
-            document.getElementById('walleView').classList.remove('hidden');
-            renderHeader();
-            await cargarTarjetas();
-            if(accion === 'sello') sumarSelloDirecto();
-        }
+        window.login = async function() { const email = document.getElementById('loginEmail').value; const pass = document.getElementById('loginPass').value; try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error: " + e.message); } }
+        window.registrar = async function() { const nombre = document.getElementById('regNombre').value; const email = document.getElementById('regEmail').value; const pass = document.getElementById('regPass').value; const tel = document.getElementById('regTel').value; const nac = document.getElementById('regNac').value; if(!nombre || !email || !pass || !tel || !nac) return alert("Completa todos los campos."); try { const cred = await createUserWithEmailAndPassword(auth, email, pass); await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { nombre, contacto: email, telefono: tel, fechaNacimiento: nac }); } catch(e) { if(e.code === 'auth/email-already-in-use') { alert("Este correo ya está registrado. Inicia sesión."); mostrarLogin(); } else { alert("Error: " + e.message); } } }
+        window.vincularNegocio = async function() { const nombre = document.getElementById('cpNombre').value; const tel = document.getElementById('cpTel').value; const nac = document.getElementById('cpNac').value; if(!nombre || !tel || !nac) return alert("Completa tus datos."); await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre, contacto: auth.currentUser.email, telefono: tel, fechaNacimiento: nac }); document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(accion === 'sello') sumarSelloDirecto(); }
         window.cerrarSesion = async function() { await signOut(auth); }
 
         async function cargarTarjetas() {
@@ -219,42 +176,48 @@
                 const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                 const tarjetaSnap = await getDoc(tarjetaRef);
                 
-                if(!tarjetaSnap.exists() && pId === premioIdURL) { await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }); } 
-                else if(!tarjetaSnap.exists()) { continue; }
+                let tarjetaData = null;
+                let isVirtual = false;
 
-                const tarjetaData = tarjetaSnap.exists() ? tarjetaSnap.data() : { sellos: premio.sellosIniciales || 0 };
+                // Si la tarjeta no existe, pero viene del link de activación, la creamos
+                if(!tarjetaSnap.exists() && pId === premioIdURL) { 
+                    await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }); 
+                    tarjetaData = { sellos: premio.sellosIniciales || 0 };
+                } else if (tarjetaSnap.exists()) {
+                    tarjetaData = tarjetaSnap.data();
+                } else if (premio.visibilidad === 'publico') {
+                    tarjetaData = { sellos: premio.sellosIniciales || 0 }; // Virtual card
+                    isVirtual = true;
+                }
+
+                if (!tarjetaData) continue; // Si es privado y no existe, no se muestra
+
                 let sellosActuales = tarjetaData.sellos || 0;
                 let expirado = (premio.vigenciaFin && hoy > premio.vigenciaFin);
+                let codigoRedencion = tarjetaData.codigoRedencion;
 
                 let htmlStamps = '';
                 for(let i=0; i<premio.sellosRequeridos; i++) htmlStamps += i < sellosActuales ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
                 const completado = sellosActuales >= premio.sellosRequeridos;
 
-                if (!expirado && completado && !tarjetaData.codigoRedencion) {
+                // Generar código si está completado y no es virtual y no tiene código
+                if (!expirado && completado && !isVirtual && !codigoRedencion) {
                     const code = Math.floor(1000 + Math.random() * 9000).toString();
                     await updateDoc(tarjetaRef, { codigoRedencion: code });
-                    tarjetaData.codigoRedencion = code; 
+                    codigoRedencion = code; 
                 }
 
                 let accionHTML = '';
                 if (expirado) {
                     accionHTML = '<p style="color:#ff6b6b; font-weight:bold;">❌ Promoción expirada</p>';
                 } else if (completado) {
-                    accionHTML = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${tarjetaData.codigoRedencion}</div>`;
+                    accionHTML = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${codigoRedencion || 'XXXX'}</div>`;
                 } else {
                     accionHTML = `<p style="font-size:14px; opacity:0.8;">Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p><button class="btn-scan" onclick="iniciarEscaneoQR('${pId}')">Escanear para sumar Sello</button>`;
                 }
 
-                container.innerHTML += `
-                    <div class="card-premium">
-                        <div class="card-body">
-                            <h2>${premio.nombre}</h2>
-                            <div class="stamps">${htmlStamps}</div>
-                            <div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>
-                            ${accionHTML}
-                        </div>
-                    </div>
-                `;
+                const visBadge = premio.visibilidad === 'publico' ? '<span class="badge-pub">Público</span>' : '';
+                container.innerHTML += `<div class="card-premium"><div class="card-body"><h2>${premio.nombre} ${visBadge}</h2><div class="stamps">${htmlStamps}</div><div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>${accionHTML}</div></div>`;
             }
         }
 
@@ -264,9 +227,13 @@
             for(const docSnap of premiosSnap.docs) {
                 const premio = docSnap.data(); const pId = docSnap.id;
                 const tarjetaSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId));
-                if(tarjetaSnap.exists() && tarjetaSnap.data().sellos < premio.sellosRequeridos && !tarjetaSnap.data().codigoRedencion) {
-                    activeCards.push({pId, nombre: premio.nombre});
-                }
+                
+                let sellos = 0; let hasRedencion = false;
+                if(tarjetaSnap.exists()) { sellos = tarjetaSnap.data().sellos || 0; hasRedencion = !!tarjetaSnap.data().codigoRedencion; } 
+                else if (premio.visibilidad === 'publico') { sellos = premio.sellosIniciales || 0; } 
+                else { continue; }
+
+                if(sellos < premio.sellosRequeridos && !hasRedencion) { activeCards.push({pId, nombre: premio.nombre}); }
             }
             if (activeCards.length === 0) { limpiarAccionURL(); return; }
             let targetCardId;
@@ -287,14 +254,7 @@
         function mostrarAnimacionMagica() {
             const overlay = document.getElementById('magicOverlay');
             overlay.style.display = 'flex';
-            for(let i=0; i<30; i++) {
-                let c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = Math.random() * 100 + 'vw';
-                c.style.animationDelay = Math.random() * 2 + 's';
-                c.style.backgroundColor = [colorSello, colorFondo, '#ffffff'][Math.floor(Math.random()*3)];
-                overlay.appendChild(c);
-            }
+            for(let i=0; i<30; i++) { let c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.animationDelay = Math.random() * 2 + 's'; c.style.backgroundColor = [colorSello, colorFondo, '#ffffff'][Math.floor(Math.random()*3)]; overlay.appendChild(c); }
             setTimeout(() => { overlay.style.display = 'none'; overlay.querySelectorAll('.confetti').forEach(c => c.remove()); }, 2500);
         }
 
@@ -306,12 +266,9 @@
             const html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width: 200, height: 200} },
                 async (decodedText) => {
-                    html5QrCode.stop();
-                    readerElement.classList.add('hidden');
-                    if(decodedText.includes(`id=${negocioId}&accion=sello`)) {
-                        await sumarSello(pId);
-                        mostrarAnimacionMagica();
-                    } else { alert("QR no pertenece a este negocio."); }
+                    html5QrCode.stop(); readerElement.classList.add('hidden');
+                    if(decodedText.includes(`id=${negocioId}&accion=sello`)) { await sumarSello(pId); mostrarAnimacionMagica(); } 
+                    else { alert("QR no pertenece a este negocio."); }
                 }, (err) => {}
             ).catch(err => alert("Error al abrir cámara: " + err));
         }
@@ -324,7 +281,12 @@
                     if(pIdForzado && pId !== pIdForzado) continue;
                     const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                     const tarjetaSnap = await getDoc(tarjetaRef);
-                    if(tarjetaSnap.exists() && tarjetaSnap.data().sellos < premio.sellosRequeridos) {
+                    
+                    // Soporte para tarjetas virtuales públicas
+                    if(!tarjetaSnap.exists() && premio.visibilidad === 'publico') {
+                        await setDoc(tarjetaRef, { sellos: (premio.sellosIniciales || 0) + 1 });
+                        await cargarTarjetas(); return;
+                    } else if(tarjetaSnap.exists() && tarjetaSnap.data().sellos < premio.sellosRequeridos) {
                         await updateDoc(tarjetaRef, { sellos: tarjetaSnap.data().sellos + 1 });
                         await cargarTarjetas(); return;
                     }
