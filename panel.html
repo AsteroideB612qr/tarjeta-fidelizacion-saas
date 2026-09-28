@@ -58,7 +58,7 @@
     </div>
 
     <div id="appView" class="container hidden">
-        <span class="version-tag">v6.0.0</span>
+        <span class="version-tag">v8.1.0</span>
         <h1 id="tituloNegocio">Cargando panel...</h1>
         <div id="subAlert"></div>
         
@@ -83,14 +83,9 @@
             <h2>📸 Puntos de Venta Físicos</h2>
             <div class="pos-grid">
                 <div class="pos-card">
-                    <p><strong>1. Acceso Directo (Billetera)</strong></p>
+                    <p><strong>Acceso Directo (Billetera)</strong><br><small>Cliente lo escanea para ver su avance</small></p>
                     <img id="qrWallet" src="" alt="QR" style="width: 150px; height: 150px;">
                     <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar</button></div>
-                </div>
-                <div class="pos-card">
-                    <p><strong>2. Sellador (QR / NFC)</strong></p>
-                    <img id="qrSello" src="" alt="QR" style="width: 150px; height: 150px;">
-                    <div class="link-box"><span id="linkNfc" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px;">Copiar</button></div>
                 </div>
             </div>
         </div>
@@ -173,14 +168,11 @@
                         document.getElementById('mailLink').value = data.redes.mail || '';
                         document.getElementById('waLink').value = data.redes.wa || '';
                     }
-                    
-                    // Lógica de suscripción
                     const alertDiv = document.getElementById('subAlert');
                     if(data.fechaVencimiento) {
                         const fecha = new Date(data.fechaVencimiento);
-                        const now = new Date();
-                        if(fecha > now) {
-                            const daysLeft = Math.ceil((fecha - now) / (1000 * 60 * 60 * 24));
+                        if(fecha > new Date()) {
+                            const daysLeft = Math.ceil((fecha - new Date()) / (1000 * 60 * 60 * 24));
                             alertDiv.className = daysLeft <= 5 ? 'alert-danger-sub' : 'alert-sub';
                             alertDiv.innerText = `Tu suscripción vence en ${daysLeft} días (${fecha.toLocaleDateString()}). Realiza tu pago para evitar interrupciones.`;
                             isExpired = false;
@@ -220,11 +212,8 @@
         function setupLinks() {
             const cb = new Date().getTime();
             const wUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cb}`;
-            const sUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cb}`;
             document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(wUrl)}`;
             document.getElementById('linkWallet').innerText = wUrl;
-            document.getElementById('qrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(sUrl)}`;
-            document.getElementById('linkNfc').innerText = sUrl;
         }
 
         window.mostrarLogin = function() { document.getElementById('loginFormBox').classList.remove('hidden'); document.getElementById('registerFormBox').classList.add('hidden'); }
@@ -235,7 +224,7 @@
         window.copiarLink = function(el) { navigator.clipboard.writeText(document.getElementById(el).innerText).then(() => alert('Copiado!')); }
 
         window.guardarDiseno = async function() {
-            if(isExpired) return alert("Suscripción vencida. No puedes guardar cambios.");
+            if(isExpired) return alert("Suscripción vencida.");
             const diseno = { colorFondo: document.getElementById('colorFondo').value, colorSello: document.getElementById('colorSello').value };
             const redes = { ig: document.getElementById('igLink').value, tk: document.getElementById('tkLink').value, fb: document.getElementById('fbLink').value, mail: document.getElementById('mailLink').value, wa: document.getElementById('waLink').value };
             const fileInput = document.getElementById('logoFile');
@@ -247,7 +236,7 @@
         }
 
         window.crearPremio = async function() {
-            if(isExpired) return alert("Suscripción vencida. Paga para reactivar.");
+            if(isExpired) return alert("Suscripción vencida.");
             const p = { nombre: document.getElementById('premioNombre').value, sellosRequeridos: parseInt(document.getElementById('premioSellos').value), sellosIniciales: parseInt(document.getElementById('premioIniciales').value)||0, vigenciaInicio: document.getElementById('premioInicio').value, vigenciaFin: document.getElementById('premioFin').value, visibilidad: document.getElementById('premioVisibilidad').value };
             if(!p.nombre || !p.sellosRequeridos || !p.vigenciaInicio || !p.vigenciaFin) return alert("Completa campos.");
             try { await addDoc(collection(db, "negocios", negocioId, "premios"), p); cargarPremios(); } catch(e) { alert("Error."); }
