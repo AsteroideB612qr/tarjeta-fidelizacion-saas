@@ -30,7 +30,7 @@
         
         <h2>Seguridad del Sistema</h2>
         <div class="form-row">
-            <div><label>PIN Cajero (Máximo 3 intentos o se bloquea):</label><input type="number" id="pinSecreto" placeholder="1234"></div>
+            <div><label>PIN Cajero (Solo emergencias si falla el QR/NFC):</label><input type="number" id="pinSecreto" placeholder="1234"></div>
             <div style="display:flex; align-items:flex-end;"><button onclick="guardarPin()">Guardar PIN</button></div>
         </div>
 
@@ -38,14 +38,14 @@
             <h2>Puntos de Venta (Mostrador)</h2>
             <div class="pos-grid">
                 <div class="pos-card">
-                    <p><strong>1. Acceso por QR</strong><br><small>Para ver avance o sellar con PIN</small></p>
-                    <img id="qrImagen" src="" alt="Código QR" style="width: 150px; height: 150px;">
-                    <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar Link QR</button></div>
+                    <p><strong>1. Acceso Directo (Billetera)</strong><br><small>Cliente lo escanea para ver su avance o crear acceso directo</small></p>
+                    <img id="qrWallet" src="" alt="QR Billetera" style="width: 150px; height: 150px;">
+                    <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar Link</button></div>
                 </div>
                 <div class="pos-card">
-                    <p><strong>2. Tag NFC (Mágico)</strong><br><small>Sella automáticamente al acercar</small></p>
-                    <div style="font-size: 40px;">📲</div>
-                    <div class="link-box"><span id="linkNfc" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px;">Copiar Link NFC</button></div>
+                    <p><strong>2. Sellador (QR / NFC)</strong><br><small>Escanea este QR o graba el link en NFC para sumar 1 sello automáticamente</small></p>
+                    <img id="qrSello" src="" alt="QR Sello" style="width: 150px; height: 150px;">
+                    <div class="link-box"><span id="linkNfc" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px;">Copiar Link Sellador</button></div>
                 </div>
             </div>
         </div>
@@ -104,11 +104,13 @@
                 }
                 
                 const walletUrl = `${baseUrl}cliente.html?id=${negocioId}`;
-                const nfcUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello_nfc`;
+                const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello`;
                 
-                document.getElementById('qrImagen').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
+                document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
                 document.getElementById('linkWallet').innerText = walletUrl;
-                document.getElementById('linkNfc').innerText = nfcUrl;
+                
+                document.getElementById('qrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(selloUrl)}`;
+                document.getElementById('linkNfc').innerText = selloUrl;
                 
                 cargarPremios();
                 cargarClientes();
