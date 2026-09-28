@@ -20,43 +20,21 @@
         
         /* Header */
         .wallet-header { text-align: center; margin-bottom: 35px; }
-        .wallet-logo { 
-            width: 90px; height: 90px; border-radius: 24px; object-fit: cover; 
-            background: white; box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.05); 
-            margin-bottom: 12px; border: 2px solid white; 
-        }
+        .wallet-logo { width: 90px; height: 90px; border-radius: 24px; object-fit: cover; background: white; box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; border: 2px solid white; }
         .wallet-name { font-size: 22px; font-weight: bold; color: #1a1a1a; margin: 0; }
         .welcome-msg { font-size: 15px; color: #666; margin-top: 6px; font-weight: 500; }
         .socials-row { display: flex; justify-content: center; gap: 12px; margin-top: 18px; }
-        .socials-row a { 
-            display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; 
-            border-radius: 50%; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
-            transition: transform 0.2s ease; text-decoration: none;
-        }
+        .socials-row a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.06); transition: transform 0.2s ease; text-decoration: none; }
         .socials-row a:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
         
         /* Tarjeta Premio */
-        .card-premium { 
-            background: var(--primary-color); border-radius: 24px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.05) inset; 
-            margin-bottom: 30px; overflow: hidden; color: white; position: relative;
-        }
-        .card-premium::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%); pointer-events: none;
-        }
+        .card-premium { background: var(--primary-color); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.05) inset; margin-bottom: 30px; overflow: hidden; color: white; position: relative; }
+        .card-premium::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%); pointer-events: none; }
         .card-body { padding: 30px 25px; text-align: center; position: relative; z-index: 1; }
         .card-body h2 { color: white; margin-top: 0; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; }
         .stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 25px 0; }
-        .stamp { 
-            width: 45px; height: 45px; border-radius: 50%; 
-            background: rgba(255,255,255,0.1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); 
-            display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.3s ease; 
-        }
-        .filled { 
-            background-color: var(--stamp-color); color: #000; transform: scale(1.05); 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.4); 
-        }
+        .stamp { width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.3s ease; }
+        .filled { background-color: var(--stamp-color); color: #000; transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.4); }
         .vigencia { font-size: 11px; opacity: 0.5; margin-top: 15px; font-weight: 500; }
         .codigo-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; font-weight: bold; font-size: 28px; letter-spacing: 4px; margin-top: 15px; color: var(--stamp-color); backdrop-filter: blur(5px); }
         .btn-scan { width: 100%; padding: 14px; background-color: var(--stamp-color); color: #000; border: none; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; transition: opacity 0.2s; }
@@ -73,20 +51,24 @@
         .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 8px; color: #666; font-size: 14px; font-weight: 500; transition: all 0.2s; }
         .tab.active { background: white; color: #007bff; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         
-        /* Animación */
-        #magicOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(10,10,10,0.92); backdrop-filter: blur(8px); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; display:none; }
+        /* Animación Mágica */
+        #magicOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(10,10,10,0.92); backdrop-filter: blur(8px); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; display:none; }
         .star-anim { font-size: 120px; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; color: var(--stamp-color); }
         @keyframes pop { 0% { transform: scale(0) rotate(0deg); } 100% { transform: scale(1) rotate(360deg); } }
         .confetti { width: 12px; height: 12px; background-color: var(--stamp-color); position: absolute; animation: fall 2s linear infinite; }
         @keyframes fall { to { transform: translateY(100vh); } }
         
-        #reader { width: 100%; border-radius: 16px; overflow: hidden; margin-top: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        /* Modal Escáner Unificado (NFC + QR) */
+        #scannerOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(10,10,10,0.95); z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 20px; }
+        .scanner-icon { font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        #reader { width: 100%; max-width: 300px; border-radius: 16px; overflow: hidden; margin-top: 20px; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v7.2.0</span>
+        <span class="version-tag">v8.0.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -119,9 +101,16 @@
         <div id="walleView" class="hidden">
             <div id="walletHeader"></div>
             <div id="tarjetasContainer"></div>
-            <div id="reader" class="hidden"></div>
             <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px; background: transparent; color: #666; font-weight: normal; font-size: 14px;">Cerrar Sesión</button>
         </div>
+    </div>
+
+    <div id="scannerOverlay">
+        <div class="scanner-icon">📱</div>
+        <h2>Esperando validación...</h2>
+        <p>Acerca tu celular al lector NFC<br>o escanea el código QR del mostrador.</p>
+        <div id="reader" class="hidden"></div>
+        <button onclick="detenerEscaneo()" style="margin-top: 30px; width: auto; padding: 10px 30px; background: #dc3545;">Cancelar</button>
     </div>
 
     <div id="magicOverlay">
@@ -140,11 +129,11 @@
         const premioIdURL = urlParams.get('premio');
         const accion = urlParams.get('accion'); 
 
-        // 1. REDIRECCIÓN OBLIGATORIA PARA ROMPER EL LOOP DE ACCESOS DIRECTOS
+        // Limpieza de URL si viene del viejo NFC con link
         if (accion === 'sello') {
             sessionStorage.setItem('doStamp_' + negocioId, 'true');
             const cleanUrl = window.location.origin + window.location.pathname + `?id=${negocioId}`;
-            window.location.replace(cleanUrl); // Redirige y limpia el historial
+            window.location.replace(cleanUrl);
         } else {
             initApp();
         }
@@ -153,8 +142,9 @@
             const baseUrl = window.location.origin + window.location.pathname.replace('cliente.html', '');
             let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
             let isExpired = true, clientName = "";
+            let activeCardId = null; // Guarda qué tarjeta sellar
+            let ndefReader = null;
 
-            // Iconos SVG Profesionales
             const icons = {
                 ig: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E4405F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`,
                 tk: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#000000"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z"/></svg>`,
@@ -180,16 +170,11 @@
                         if(data.redes) redes = data.redes;
                         if(data.fechaVencimiento) { isExpired = new Date(data.fechaVencimiento) < new Date(); }
                         
-                        // Configurar Icono de Acceso Directo (PWA Manifest Dinámico)
                         if(logoUrl) {
                             const manifest = {
-                                name: nombreNegocio, 
-                                short_name: (nombreNegocio || "Fidelidad").substring(0,12), 
-                                display: "standalone",
-                                background_color: "#ffffff", 
-                                theme_color: colorFondo,
-                                start_url: `${baseUrl}cliente.html?id=${negocioId}`,
-                                scope: `${baseUrl}cliente.html`,
+                                name: nombreNegocio, short_name: (nombreNegocio || "Fidelidad").substring(0,12), 
+                                display: "standalone", background_color: "#ffffff", theme_color: colorFondo,
+                                start_url: `${baseUrl}cliente.html?id=${negocioId}`, scope: `${baseUrl}cliente.html`,
                                 icons: [{ src: logoUrl, sizes: "512x512", type: "image/png", purpose: "any" }]
                             };
                             const stringManifest = JSON.stringify(manifest);
@@ -198,7 +183,6 @@
                             let mLink = document.querySelector('link[rel="manifest"]');
                             if (!mLink) { mLink = document.createElement('link'); mLink.rel = 'manifest'; document.head.appendChild(mLink); }
                             mLink.href = manifestURL;
-                            
                             let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
                             if (!appleLink) { appleLink = document.createElement('link'); appleLink.rel = 'apple-touch-icon'; document.head.appendChild(appleLink); }
                             appleLink.href = logoUrl;
@@ -220,8 +204,6 @@
                             document.getElementById('walleView').classList.remove('hidden');
                             renderHeader(); 
                             await cargarTarjetas();
-                            
-                            // 2. EJECUTAR EL SELLO SI VIENE DE REDIRECCIÓN
                             if (sessionStorage.getItem('doStamp_' + negocioId) === 'true' && !isExpired) {
                                 sessionStorage.removeItem('doStamp_' + negocioId);
                                 sumarSelloDirecto(); 
@@ -242,7 +224,6 @@
                 if(redes.fb) socialsHtml += `<a href="${redes.fb}" target="_blank">${icons.fb}</a>`;
                 if(redes.mail) socialsHtml += `<a href="mailto:${redes.mail}" target="_blank">${icons.mail}</a>`;
                 if(redes.wa) socialsHtml += `<a href="https://wa.me/${redes.wa.replace(/[^0-9]/g,'')}" target="_blank">${icons.wa}</a>`;
-                
                 const headerHtml = `
                     ${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}
                     <h1 class="wallet-name">${nombreNegocio}</h1>
@@ -262,17 +243,11 @@
             async function cargarTarjetas() {
                 const container = document.getElementById('tarjetasContainer');
                 container.innerHTML = '';
-                
-                if(isExpired) {
-                    container.innerHTML = '<div class="auth-card"><h2>Promociones Pausadas</h2><p>El negocio está actualizando sus servicios. Vuelve pronto.</p></div>';
-                    return;
-                }
-
+                if(isExpired) { container.innerHTML = '<div class="auth-card"><h2>Promociones Pausadas</h2><p>El negocio está actualizando sus servicios. Vuelve pronto.</p></div>'; return; }
                 const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
                 if(premiosSnap.empty) { container.innerHTML = '<div class="auth-card"><p>El negocio aún no tiene premios.</p></div>'; return; }
 
                 const hoy = new Date().toISOString().split('T')[0];
-
                 for(const docSnap of premiosSnap.docs) {
                     const premio = docSnap.data(); const pId = docSnap.id;
                     const tRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
@@ -287,15 +262,68 @@
                     let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
                     let comp = sAct >= premio.sellosRequeridos;
                     if (!exp && comp && !cod) { cod = Math.floor(1000+Math.random()*9000).toString(); await updateDoc(tRef, { codigoRedencion: cod }, { merge: true }); }
-                    
                     let aH = '';
                     if (exp) aH = '<p style="color:#ff6b6b; font-weight:bold;">❌ Promoción expirada</p>';
                     else if (comp) aH = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${cod || 'XXXX'}</div>`;
-                    else aH = `<p style="font-size:14px; opacity:0.8;">Te faltan ${premio.sellosRequeridos - sAct} sellos</p><button class="btn-scan" onclick="iniciarEscaneoQR('${pId}')">Escanear para sumar Sello</button>`;
-
+                    else aH = `<p style="font-size:14px; opacity:0.8;">Te faltan ${premio.sellosRequeridos - sAct} sellos</p><button class="btn-scan" onclick="iniciarValidacion('${pId}')">Escanear para sumar Sello</button>`;
                     const vB = premio.visibilidad === 'publico' ? '<span class="badge-pub">Público</span>' : '';
                     container.innerHTML += `<div class="card-premium"><div class="card-body"><h2>${premio.nombre} ${vB}</h2><div class="stamps">${hS}</div><div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>${aH}</div></div>`;
                 }
+            }
+
+            // --- NUEVO ESCÁNER UNIFICADO (NFC + QR) ---
+            window.iniciarValidacion = function(pId) {
+                activeCardId = pId;
+                document.getElementById('scannerOverlay').style.display = 'flex';
+                
+                // 1. Intentar activar NFC (Solo funciona en Android Chrome)
+                if ('NDEFReader' in window) {
+                    try {
+                        ndefReader = new NDEFReader();
+                        ndefReader.scan().then(() => {
+                            ndefReader.onreading = async (event) => {
+                                const decoder = new TextDecoder();
+                                for (const record of event.message.records) {
+                                    if (record.recordType === "text") {
+                                        const text = decoder.decode(record.data);
+                                        if (text.trim() === 'FIDELIDAD_STAMP') {
+                                            detenerEscaneo();
+                                            await sumarSello(activeCardId);
+                                            mostrarAnimacionMagica();
+                                        }
+                                    }
+                                }
+                            };
+                        }).catch(err => console.log("NFC no disponible o cancelado."));
+                    } catch(e) { console.log("Error NFC:", e); }
+                }
+
+                // 2. Iniciar cámara QR (Para iOS y fallback de Android)
+                const readerElement = document.getElementById('reader');
+                readerElement.classList.remove('hidden');
+                const html5QrCode = new Html5Qrcode("reader");
+                html5QrCode.start({facingMode:"environment"}, {fps: 10, qrbox: {width: 200, height: 200}},
+                    async (decodedText) => {
+                        if(decodedText.includes(`id=${negocioId}&accion=sello`)) {
+                            detenerEscaneo();
+                            await sumarSello(activeCardId);
+                            mostrarAnimacionMagica();
+                        }
+                    }, (err) => {}
+                ).catch(err => console.log("Error Cámara:", err));
+            }
+
+            window.detenerEscaneo = function() {
+                document.getElementById('scannerOverlay').style.display = 'none';
+                const readerElement = document.getElementById('reader');
+                if(readerElement.classList.contains('hidden')) return;
+                
+                // Detener cámara
+                if (typeof Html5Qrcode !== 'undefined') {
+                    try { new Html5Qrcode("reader").stop(); } catch(e){}
+                }
+                readerElement.classList.add('hidden');
+                activeCardId = null;
             }
 
             async function sumarSelloDirecto() {
@@ -311,11 +339,6 @@
                 const o = document.getElementById('magicOverlay'); o.style.display='flex';
                 for(let i=0; i<30; i++) { let c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.animationDelay=Math.random()*2+'s'; c.style.backgroundColor=[colorSello,colorFondo,'#fff'][Math.floor(Math.random()*3)]; o.appendChild(c); }
                 setTimeout(()=>{o.style.display='none'; o.querySelectorAll('.confetti').forEach(c=>c.remove());}, 2500);
-            }
-
-            window.iniciarEscaneoQR = function(pId) {
-                const r = document.getElementById('reader'); r.classList.remove('hidden'); const h = new Html5Qrcode("reader");
-                h.start({facingMode:"environment"}, {fps:10, qrbox:{width:200,height:200}}, async(dT)=>{ h.stop(); r.classList.add('hidden'); if(dT.includes(`id=${negocioId}&accion=sello`)) { await sumarSello(pId); mostrarAnimacionMagica(); } else alert("QR inválido."); }, ()=>{}).catch(err=>alert("Error cámara."));
             }
 
             async function sumarSello(pIdF) {
