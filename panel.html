@@ -25,17 +25,39 @@
         .version-tag { position: absolute; top: 20px; right: 20px; background: #007bff; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
         .color-input { width: 100%; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
         .btn-add-stamp { background-color: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px; }
+        .auth-box { max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <span class="version-tag">v2.0.0</span>
-        <h1 id="tituloNegocio">Cargando panel...</h1>
+    <div id="authView" class="auth-box hidden">
+        <h2>🔒 Acceso Seguro</h2>
+        <p>Este panel es privado para el dueño o colaboradores.</p>
+        <div id="loginFormBox">
+            <input type="email" id="loginEmail" placeholder="Email">
+            <input type="password" id="loginPass" placeholder="Contraseña">
+            <button onclick="login()">Iniciar Sesión</button>
+            <p style="font-size:12px; margin-top:15px; color:#666;">¿Primera vez aquí? <a href="#" onclick="mostrarRegistro()" style="color:#007bff;">Reclamar cuenta</a></p>
+        </div>
+        <div id="registerFormBox" class="hidden">
+            <p>Reclama este panel creando tu contraseña:</p>
+            <input type="email" id="regEmail" placeholder="Tu Email">
+            <input type="password" id="regPass" placeholder="Crea una Contraseña">
+            <button class="btn-success" onclick="registrar()">Crear Cuenta</button>
+            <p style="font-size:12px; margin-top:15px; color:#666;">¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()" style="color:#007bff;">Iniciar sesión</a></p>
+        </div>
+    </div>
 
+    <div id="appView" class="container hidden">
+        <span class="version-tag">v3.0.0</span>
+        <h1 id="tituloNegocio">Cargando panel...</h1>
+        
         <h2>🎨 Personalización Visual</h2>
         <div class="form-row">
-            <div style="flex:3;"><label>URL del Logo (Sube tu imagen a internet y pega el link aquí):</label><input type="url" id="logoUrl" placeholder="https://ejemplo.com/logo.png"></div>
-            <div><label>Color Fondo Tarjeta:</label><input type="color" id="colorFondo" value="#ffffff" class="color-input"></div>
+            <div style="flex:3;">
+                <label>Logo del Negocio (Sube tu imagen):</label>
+                <input type="file" id="logoFile" accept="image/*">
+            </div>
+            <div><label>Color Fondo Tarjeta:</label><input type="color" id="colorFondo" value="#1a1a1a" class="color-input"></div>
             <div><label>Color de Sellos:</label><input type="color" id="colorSello" value="#ffc107" class="color-input"></div>
         </div>
         <button onclick="guardarDiseno()">Guardar Diseño</button>
@@ -44,12 +66,12 @@
             <h2>📸 Puntos de Venta Físicos</h2>
             <div class="pos-grid">
                 <div class="pos-card">
-                    <p><strong>1. Acceso Directo (Billetera)</strong><br><small>Cliente lo escanea para ver su avance</small></p>
+                    <p><strong>1. Acceso Directo (Billetera)</strong></p>
                     <img id="qrWallet" src="" alt="QR Billetera" style="width: 150px; height: 150px;">
                     <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar Link</button></div>
                 </div>
                 <div class="pos-card">
-                    <p><strong>2. Sellador (QR / NFC)</strong><br><small>Sella automáticamente al escanear</small></p>
+                    <p><strong>2. Sellador (QR / NFC)</strong></p>
                     <img id="qrSello" src="" alt="QR Sello" style="width: 150px; height: 150px;">
                     <div class="link-box"><span id="linkNfc" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px;">Copiar Link Sellador</button></div>
                 </div>
@@ -76,21 +98,23 @@
 
         <h2>Premios Activos</h2>
         <table>
-            <thead><tr><th>Premio</th><th>Vigencia</th><th>Enlace Cliente (Activar Tarjeta)</th><th>Acción</th></tr></thead>
+            <thead><tr><th>Premio</th><th>Vigencia</th><th>Enlace Cliente</th><th>Acción</th></tr></thead>
             <tbody id="tablaPremios"><tr><td colspan="4">Cargando...</td></tr></tbody>
         </table>
 
-        <h2>🛒 Gestión de Clientes (CRM Online y Físico)</h2>
-        <button onclick="descargarCSV()" style="background-color:#17a2b8; margin-bottom:10px;">Descargar Base de Datos (CSV)</button>
+        <h2>🛒 Gestión de Clientes (CRM)</h2>
+        <button onclick="descargarCSV()" style="background-color:#17a2b8; margin-bottom:10px;">Descargar CSV</button>
         <table>
-            <thead><tr><th>Datos Cliente</th><th>Tarjetas Activas (Avance)</th><th>Enviar WhatsApp</th><th>Acción</th></tr></thead>
+            <thead><tr><th>Datos Cliente</th><th>Tarjetas Activas</th><th>Enviar WhatsApp</th><th>Acción</th></tr></thead>
             <tbody id="tablaClientes"><tr><td colspan="4">Cargando...</td></tr></tbody>
         </table>
+        <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px; width:auto; padding:5px 10px; float:right;">Cerrar Sesión</button>
     </div>
 
     <script type="module">
-        import { db } from "./firebase.js";
+        import { db, auth } from "./firebase.js";
         import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const urlParams = new URLSearchParams(window.location.search);
         const negocioId = urlParams.get('id');
@@ -100,6 +124,7 @@
         const baseUrl = window.location.origin + window.location.pathname.replace('panel.html', '');
         let clientesData = [];
         let premiosMap = {};
+        let hasOwner = false;
 
         window.onload = async function() {
             try {
@@ -107,40 +132,83 @@
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     document.getElementById('tituloNegocio').innerText = "Panel de: " + data.nombre;
+                    hasOwner = !!data.ownerUid; // ¿Ya tiene dueño?
                     if(data.diseno) {
-                        document.getElementById('logoUrl').value = data.diseno.logo || '';
-                        document.getElementById('colorFondo').value = data.diseno.colorFondo || '#ffffff';
+                        document.getElementById('colorFondo').value = data.diseno.colorFondo || '#1a1a1a';
                         document.getElementById('colorSello').value = data.diseno.colorSello || '#ffc107';
                     }
                 }
-                
-                const cacheBuster = new Date().getTime();
-                const walletUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cacheBuster}`;
-                const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cacheBuster}`;
-                
-                document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
-                document.getElementById('linkWallet').innerText = walletUrl;
-                
-                document.getElementById('qrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(selloUrl)}`;
-                document.getElementById('linkNfc').innerText = selloUrl;
-                
-                cargarPremios();
-                cargarClientes();
+                setupLinks();
             } catch (e) { alert("Error al cargar datos."); }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists() && docSnap.data().ownerUid === user.uid) {
+                        document.getElementById('authView').classList.add('hidden');
+                        document.getElementById('appView').classList.remove('hidden');
+                        cargarPremios();
+                        cargarClientes();
+                    } else {
+                        alert("No tienes permiso para acceder a este panel.");
+                        await signOut(auth);
+                    }
+                } else {
+                    document.getElementById('authView').classList.remove('hidden');
+                    document.getElementById('appView').classList.add('hidden');
+                    if (!hasOwner) { mostrarRegistro(); } else { mostrarLogin(); }
+                }
+            });
         };
 
-        window.copiarLink = function(elementId) {
-            navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => alert('¡Link copiado!'));
+        function setupLinks() {
+            const cacheBuster = new Date().getTime();
+            const walletUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cacheBuster}`;
+            const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cacheBuster}`;
+            document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
+            document.getElementById('linkWallet').innerText = walletUrl;
+            document.getElementById('qrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(selloUrl)}`;
+            document.getElementById('linkNfc').innerText = selloUrl;
         }
 
+        window.mostrarLogin = function() { document.getElementById('loginFormBox').classList.remove('hidden'); document.getElementById('registerFormBox').classList.add('hidden'); }
+        window.mostrarRegistro = function() { document.getElementById('registerFormBox').classList.remove('hidden'); document.getElementById('loginFormBox').classList.add('hidden'); }
+        
+        window.login = async function() {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error: " + e.message); }
+        }
+        window.registrar = async function() {
+            const email = document.getElementById('regEmail').value;
+            const pass = document.getElementById('regPass').value;
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                await setDoc(docRef, { ownerUid: cred.user.uid }, { merge: true });
+            } catch(e) { alert("Error al registrar: " + e.message); }
+        }
+        window.cerrarSesion = async function() { await signOut(auth); }
+
+        window.copiarLink = function(elementId) { navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => alert('¡Link copiado!')); }
+
         window.guardarDiseno = async function() {
-            const diseno = {
-                logo: document.getElementById('logoUrl').value,
-                colorFondo: document.getElementById('colorFondo').value,
-                colorSello: document.getElementById('colorSello').value
-            };
-            await setDoc(docRef, { diseno }, { merge: true });
-            alert("¡Diseño guardado! Los clientes verán los cambios al abrir su tarjeta.");
+            const fileInput = document.getElementById('logoFile');
+            const colorFondo = document.getElementById('colorFondo').value;
+            const colorSello = document.getElementById('colorSello').value;
+            let diseno = { colorFondo, colorSello };
+
+            if (fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    diseno.logo = e.target.result; // Convierte a Base64
+                    await setDoc(docRef, { diseno }, { merge: true });
+                    alert("¡Diseño y logo guardados!");
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                await setDoc(docRef, { diseno }, { merge: true });
+                alert("¡Colores guardados!");
+            }
         }
 
         window.crearPremio = async function() {
@@ -149,7 +217,7 @@
             const iniciales = parseInt(document.getElementById('premioIniciales').value) || 0;
             const inicio = document.getElementById('premioInicio').value;
             const fin = document.getElementById('premioFin').value;
-            if(!nombre || !sellos || !inicio || !fin) return alert("Completa todos los campos del premio.");
+            if(!nombre || !sellos || !inicio || !fin) return alert("Completa todos los campos.");
             try {
                 await addDoc(collection(db, "negocios", negocioId, "premios"), { nombre, sellosRequeridos: sellos, sellosIniciales: iniciales, vigenciaInicio: inicio, vigenciaFin: fin });
                 document.getElementById('premioNombre').value = ''; document.getElementById('premioSellos').value = ''; document.getElementById('premioIniciales').value = '0';
@@ -158,9 +226,7 @@
             } catch (e) { alert("Error al crear premio."); }
         }
 
-        window.eliminarPremio = async function(id) {
-            if(confirm("¿Eliminar este premio?")) { await deleteDoc(doc(db, "negocios", negocioId, "premios", id)); cargarPremios(); }
-        }
+        window.eliminarPremio = async function(id) { if(confirm("¿Eliminar?")) { await deleteDoc(doc(db, "negocios", negocioId, "premios", id)); cargarPremios(); } }
 
         async function cargarPremios() {
             const tbody = document.getElementById('tablaPremios');
@@ -168,10 +234,9 @@
             const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "premios"));
             if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="4">No hay premios.</td></tr>'; return; }
             querySnapshot.forEach((docSnap) => {
-                const p = docSnap.data();
-                premiosMap[docSnap.id] = p;
+                const p = docSnap.data(); premiosMap[docSnap.id] = p;
                 const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${docSnap.id}`;
-                tbody.innerHTML += `<tr><td><strong>${p.nombre}</strong> (${p.sellosIniciales}/${p.sellosRequeridos})</td><td>${p.vigenciaInicio} al ${p.vigenciaFin}</td><td><a href="${link}" target="_blank">Activar Tarjeta</a></td><td><button class="btn-danger" onclick="eliminarPremio('${docSnap.id}')">Eliminar</button></td></tr>`;
+                tbody.innerHTML += `<tr><td><strong>${p.nombre}</strong> (${p.sellosIniciales}/${p.sellosRequeridos})</td><td>${p.vigenciaInicio} al ${p.vigenciaFin}</td><td><a href="${link}" target="_blank">Activar</a></td><td><button class="btn-danger" onclick="eliminarPremio('${docSnap.id}')">Eliminar</button></td></tr>`;
             });
         }
 
@@ -179,40 +244,27 @@
             const tbody = document.getElementById('tablaClientes');
             tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
             clientesData = [];
-
             const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
             if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="4">Aún no hay clientes.</td></tr>'; return; }
-            
             tbody.innerHTML = '';
             for (const docSnap of querySnapshot.docs) {
-                const c = docSnap.data();
-                const id = docSnap.id;
-                clientesData.push(c);
+                const c = docSnap.data(); const id = docSnap.id; clientesData.push(c);
                 const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
                 let tarjetasHtml = '<span style="color:#999;">Ninguna activa</span>';
-                
                 if (!tarjetasSnap.empty) {
                     tarjetasHtml = '';
                     for (const tDoc of tarjetasSnap.docs) {
                         const t = tDoc.data();
                         const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
                         const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
-                        
                         if(t.codigoRedencion) {
-                            tarjetasHtml += `<div class="card-info"><span>🏆 ${pNombre}: LISTO (Cód: ${t.codigoRedencion})</span></div>`;
+                            tarjetasHtml += `<div class="card-info"><span>🏆 ${pNombre}: Cód ${t.codigoRedencion}</span></div>`;
                         } else {
-                            tarjetasHtml += `<div class="card-info"><span>⭐ ${pNombre}: ${t.sellos || 0}/${pTotal}</span><button class="btn-add-stamp" onclick="sumarSelloManual('${id}', '${tDoc.id}', ${pTotal})">+1 Sello Online</button></div>`;
+                            tarjetasHtml += `<div class="card-info"><span>⭐ ${pNombre}: ${t.sellos || 0}/${pTotal}</span><button class="btn-add-stamp" onclick="sumarSelloManual('${id}', '${tDoc.id}', ${pTotal})">+1 Sello</button></div>`;
                         }
                     }
                 }
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${c.nombre}</strong><br><small>${c.contacto}</small><br><small>📱 ${c.telefono || 'N/A'}</small><br><small>🎂 ${c.fechaNacimiento || 'N/A'}</small></td>
-                        <td>${tarjetasHtml}</td>
-                        <td><input type="text" placeholder="Mensaje..." id="msg-${id}" style="margin-bottom:5px;"><button class="btn-wa" style="width:100%;" onclick="enviarWhatsApp('${id}', '${c.telefono}')">WhatsApp</button></td>
-                        <td><button class="btn-danger" onclick="eliminarCliente('${id}')">Eliminar</button></td>
-                    </tr>
-                `;
+                tbody.innerHTML += `<tr><td><strong>${c.nombre}</strong><br><small>${c.contacto}</small><br><small>📱 ${c.telefono || 'N/A'}</small></td><td>${tarjetasHtml}</td><td><input type="text" placeholder="Msg..." id="msg-${id}" style="margin-bottom:5px;"><button class="btn-wa" style="width:100%;" onclick="enviarWhatsApp('${id}', '${c.telefono}')">WhatsApp</button></td><td><button class="btn-danger" onclick="eliminarCliente('${id}')">Eliminar</button></td></tr>`;
             }
         }
 
@@ -222,28 +274,22 @@
                 const cardSnap = await getDoc(cardRef);
                 if(cardSnap.exists()) {
                     let currentStamps = cardSnap.data().sellos || 0;
-                    if(currentStamps < maxSellos) {
-                        await updateDoc(cardRef, { sellos: currentStamps + 1 });
-                        alert("¡Sello sumado con éxito!");
-                        cargarClientes();
-                    } else {
-                        alert("Este cliente ya completó esta tarjeta.");
-                    }
+                    if(currentStamps < maxSellos) { await updateDoc(cardRef, { sellos: currentStamps + 1 }); alert("¡Sello sumado!"); cargarClientes(); } 
+                    else { alert("Tarjeta completada."); }
                 }
-            } catch(e) { alert("Error al sumar sello."); }
+            } catch(e) { alert("Error."); }
         }
 
         window.enviarWhatsApp = function(id, telefono) {
-            if(!telefono) return alert("Este cliente no registró teléfono.");
+            if(!telefono) return alert("Sin teléfono.");
             const msg = document.getElementById('msg-'+id).value;
-            const cleanTel = telefono.replace(/[^0-9]/g, '');
-            const url = `https://wa.me/${cleanTel}?text=${encodeURIComponent(msg)}`;
+            const url = `https://wa.me/${telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
         }
 
         window.validarRedencion = async function() {
             const code = document.getElementById('inputRedencion').value.trim();
-            if(!code) return alert("Ingresa el código.");
+            if(!code) return alert("Ingresa código.");
             try {
                 const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
                 for (const docSnap of querySnapshot.docs) {
@@ -252,23 +298,21 @@
                     for (const tDoc of tarjetasSnap.docs) {
                         if(tDoc.data().codigoRedencion === code) {
                             await deleteDoc(doc(db, "negocios", negocioId, "clientes", id, "tarjetas", tDoc.id));
-                            alert("¡Premio canjeado con éxito! La tarjeta ha sido eliminada del cliente.");
+                            alert("¡Premio canjeado!");
                             document.getElementById('inputRedencion').value = '';
                             cargarClientes();
                             return;
                         }
                     }
                 }
-                alert("Código no válido o ya canjeado.");
-            } catch(e) { alert("Error al validar."); }
+                alert("Código no válido.");
+            } catch(e) { alert("Error."); }
         }
 
-        window.eliminarCliente = async function(id) {
-            if(confirm("¿Eliminar a este cliente?")) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id)); cargarClientes(); }
-        }
+        window.eliminarCliente = async function(id) { if(confirm("¿Eliminar?")) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id)); cargarClientes(); } }
 
         window.descargarCSV = function() {
-            if(clientesData.length === 0) return alert("No hay clientes.");
+            if(clientesData.length === 0) return alert("Sin clientes.");
             let csv = "Nombre,Email,Telefono,FechaNacimiento\n";
             clientesData.forEach(c => { csv += `${c.nombre},${c.contacto},${c.telefono || ''},${c.fechaNacimiento || ''}\n`; });
             const blob = new Blob([csv], { type: 'text/csv' });
