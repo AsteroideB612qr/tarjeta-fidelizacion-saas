@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel del Negocio - FidelidadPro</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; }
         h1, h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         input, select { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; color: white; margin-top: 5px;}
@@ -18,18 +18,30 @@
         th { background-color: #f2f2f2; }
         .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
         .form-row > div { flex: 1; min-width: 150px; }
-        .card-info { font-size: 12px; background: #f9f9f9; padding: 5px; border-radius: 4px; margin-top: 5px; }
+        .card-info { font-size: 12px; background: #f9f9f9; padding: 5px; border-radius: 4px; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; }
         .link-box { background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 5px; text-align: left; }
         .pos-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
         .pos-card { background: white; padding: 15px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
+        .version-tag { position: absolute; top: 20px; right: 20px; background: #007bff; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+        .color-input { width: 100%; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-add-stamp { background-color: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
+        <span class="version-tag">v2.0.0</span>
         <h1 id="tituloNegocio">Cargando panel...</h1>
 
+        <h2>🎨 Personalización Visual</h2>
+        <div class="form-row">
+            <div style="flex:3;"><label>URL del Logo (Sube tu imagen a internet y pega el link aquí):</label><input type="url" id="logoUrl" placeholder="https://ejemplo.com/logo.png"></div>
+            <div><label>Color Fondo Tarjeta:</label><input type="color" id="colorFondo" value="#ffffff" class="color-input"></div>
+            <div><label>Color de Sellos:</label><input type="color" id="colorSello" value="#ffc107" class="color-input"></div>
+        </div>
+        <button onclick="guardarDiseno()">Guardar Diseño</button>
+
         <div class="info-box">
-            <h2>Puntos de Venta (Mostrador)</h2>
+            <h2>📸 Puntos de Venta Físicos</h2>
             <div class="pos-grid">
                 <div class="pos-card">
                     <p><strong>1. Acceso Directo (Billetera)</strong><br><small>Cliente lo escanea para ver su avance</small></p>
@@ -50,7 +62,7 @@
             <div style="display:flex; align-items:flex-end;"><button class="btn-success" onclick="validarRedencion()">Canjear Premio</button></div>
         </div>
 
-        <h2>Crear Premio (Con Vigencia - FOMO)</h2>
+        <h2>Crear Premio</h2>
         <div class="form-row">
             <div><label>Nombre Premio:</label><input type="text" id="premioNombre" placeholder="Café Gratis"></div>
             <div><label>Sellos Totales:</label><input type="number" id="premioSellos" placeholder="5" min="1"></div>
@@ -68,7 +80,7 @@
             <tbody id="tablaPremios"><tr><td colspan="4">Cargando...</td></tr></tbody>
         </table>
 
-        <h2>Gestión de Clientes (CRM)</h2>
+        <h2>🛒 Gestión de Clientes (CRM Online y Físico)</h2>
         <button onclick="descargarCSV()" style="background-color:#17a2b8; margin-bottom:10px;">Descargar Base de Datos (CSV)</button>
         <table>
             <thead><tr><th>Datos Cliente</th><th>Tarjetas Activas (Avance)</th><th>Enviar WhatsApp</th><th>Acción</th></tr></thead>
@@ -78,7 +90,7 @@
 
     <script type="module">
         import { db } from "./firebase.js";
-        import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const urlParams = new URLSearchParams(window.location.search);
         const negocioId = urlParams.get('id');
@@ -87,15 +99,21 @@
         const docRef = doc(db, "negocios", negocioId);
         const baseUrl = window.location.origin + window.location.pathname.replace('panel.html', '');
         let clientesData = [];
+        let premiosMap = {};
 
         window.onload = async function() {
             try {
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
-                    document.getElementById('tituloNegocio').innerText = "Panel de: " + docSnap.data().nombre;
+                    const data = docSnap.data();
+                    document.getElementById('tituloNegocio').innerText = "Panel de: " + data.nombre;
+                    if(data.diseno) {
+                        document.getElementById('logoUrl').value = data.diseno.logo || '';
+                        document.getElementById('colorFondo').value = data.diseno.colorFondo || '#ffffff';
+                        document.getElementById('colorSello').value = data.diseno.colorSello || '#ffc107';
+                    }
                 }
                 
-                // Cache Buster
                 const cacheBuster = new Date().getTime();
                 const walletUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cacheBuster}`;
                 const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cacheBuster}`;
@@ -113,6 +131,16 @@
 
         window.copiarLink = function(elementId) {
             navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => alert('¡Link copiado!'));
+        }
+
+        window.guardarDiseno = async function() {
+            const diseno = {
+                logo: document.getElementById('logoUrl').value,
+                colorFondo: document.getElementById('colorFondo').value,
+                colorSello: document.getElementById('colorSello').value
+            };
+            await setDoc(docRef, { diseno }, { merge: true });
+            alert("¡Diseño guardado! Los clientes verán los cambios al abrir su tarjeta.");
         }
 
         window.crearPremio = async function() {
@@ -141,6 +169,7 @@
             if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="4">No hay premios.</td></tr>'; return; }
             querySnapshot.forEach((docSnap) => {
                 const p = docSnap.data();
+                premiosMap[docSnap.id] = p;
                 const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${docSnap.id}`;
                 tbody.innerHTML += `<tr><td><strong>${p.nombre}</strong> (${p.sellosIniciales}/${p.sellosRequeridos})</td><td>${p.vigenciaInicio} al ${p.vigenciaFin}</td><td><a href="${link}" target="_blank">Activar Tarjeta</a></td><td><button class="btn-danger" onclick="eliminarPremio('${docSnap.id}')">Eliminar</button></td></tr>`;
             });
@@ -150,9 +179,6 @@
             const tbody = document.getElementById('tablaClientes');
             tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
             clientesData = [];
-            const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
-            const premiosMap = {};
-            premiosSnap.forEach(d => premiosMap[d.id] = d.data());
 
             const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
             if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="4">Aún no hay clientes.</td></tr>'; return; }
@@ -164,18 +190,20 @@
                 clientesData.push(c);
                 const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
                 let tarjetasHtml = '<span style="color:#999;">Ninguna activa</span>';
+                
                 if (!tarjetasSnap.empty) {
                     tarjetasHtml = '';
-                    tarjetasSnap.forEach(tDoc => {
+                    for (const tDoc of tarjetasSnap.docs) {
                         const t = tDoc.data();
                         const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
                         const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
+                        
                         if(t.codigoRedencion) {
-                            tarjetasHtml += `<div class="card-info" style="color:#dc3545; font-weight:bold;">🏆 ${pNombre}: LISTO (Código: ${t.codigoRedencion})</div>`;
+                            tarjetasHtml += `<div class="card-info"><span>🏆 ${pNombre}: LISTO (Cód: ${t.codigoRedencion})</span></div>`;
                         } else {
-                            tarjetasHtml += `<div class="card-info">⭐ ${pNombre}: ${t.sellos || 0}/${pTotal}</div>`;
+                            tarjetasHtml += `<div class="card-info"><span>⭐ ${pNombre}: ${t.sellos || 0}/${pTotal}</span><button class="btn-add-stamp" onclick="sumarSelloManual('${id}', '${tDoc.id}', ${pTotal})">+1 Sello Online</button></div>`;
                         }
-                    });
+                    }
                 }
                 tbody.innerHTML += `
                     <tr>
@@ -186,6 +214,23 @@
                     </tr>
                 `;
             }
+        }
+
+        window.sumarSelloManual = async function(clientId, cardId, maxSellos) {
+            try {
+                const cardRef = doc(db, "negocios", negocioId, "clientes", clientId, "tarjetas", cardId);
+                const cardSnap = await getDoc(cardRef);
+                if(cardSnap.exists()) {
+                    let currentStamps = cardSnap.data().sellos || 0;
+                    if(currentStamps < maxSellos) {
+                        await updateDoc(cardRef, { sellos: currentStamps + 1 });
+                        alert("¡Sello sumado con éxito!");
+                        cargarClientes();
+                    } else {
+                        alert("Este cliente ya completó esta tarjeta.");
+                    }
+                }
+            } catch(e) { alert("Error al sumar sello."); }
         }
 
         window.enviarWhatsApp = function(id, telefono) {
