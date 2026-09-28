@@ -21,13 +21,26 @@
         .tabs { display: flex; margin-bottom: 15px; }
         .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-bottom: 2px solid #ccc; background: #f1f1f1; }
         .tab.active { border-bottom: 2px solid #007bff; background: white; font-weight: bold; }
+
+        /* Modal PIN */
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:100; }
+        .modal-box { background:white; padding:20px; border-radius:10px; width:300px; text-align:center; }
+        .pin-input { font-size: 24px; letter-spacing: 10px; text-align: center; margin-bottom: 15px; }
+        .keypad { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; }
+        .keypad button { width:100%; font-size:20px; padding:15px; background:#f1f1f1; color:#333; }
+        
+        /* Animación Mágica NFC */
+        #magicOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; display:none; }
+        .star-anim { font-size: 100px; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        .confetti { width: 10px; height: 10px; background-color: #ffc107; position: absolute; animation: fall 2s linear infinite; }
+        @keyframes fall { to { transform: translateY(100vh); } }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 id="negocioNombre" style="text-align:center;">Cargando...</h1>
 
-        <!-- Login / Registro -->
         <div id="authForm" class="card hidden">
             <div class="tabs">
                 <div class="tab active" id="tabLogin" onclick="mostrarLogin()">Iniciar Sesión</div>
@@ -50,7 +63,6 @@
             </div>
         </div>
 
-        <!-- Completar Perfil -->
         <div id="completarPerfilForm" class="card hidden">
             <h2>¡Bienvenido a otro negocio!</h2>
             <p>Tu cuenta existe, pero necesitas dejar tus datos para <strong id="negocioNombrePerfil"></strong>:</p>
@@ -60,11 +72,34 @@
             <button onclick="vincularNegocio()">Vincular mi cuenta</button>
         </div>
 
-        <!-- Billetera -->
         <div id="walleView" class="hidden">
             <div id="tarjetasContainer"></div>
             <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px;">Cerrar Sesión</button>
         </div>
+    </div>
+
+    <!-- Modal PIN -->
+    <div id="pinModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h2>Validar Sello</h2>
+            <p style="font-size:12px; color:#666;">Cajero: Ingrese PIN</p>
+            <input type="password" id="pinInput" class="pin-input" maxlength="4" readonly>
+            <div id="pinError" style="color:#dc3545; font-size:12px; height:15px; margin-bottom:10px;"></div>
+            <div class="keypad">
+                <button onclick="addPin('1')">1</button><button onclick="addPin('2')">2</button><button onclick="addPin('3')">3</button>
+                <button onclick="addPin('4')">4</button><button onclick="addPin('5')">5</button><button onclick="addPin('6')">6</button>
+                <button onclick="addPin('7')">7</button><button onclick="addPin('8')">8</button><button onclick="addPin('9')">9</button>
+                <button onclick="closePinModal()" style="background:#dc3545; color:white;">X</button>
+                <button onclick="addPin('0')">0</button>
+                <button onclick="submitPin()" style="background:#28a745; color:white;">✓</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animación Mágica -->
+    <div id="magicOverlay">
+        <div class="star-anim">⭐</div>
+        <h2 style="color:#28a745; margin-top:20px;">¡Sello Agregado!</h2>
     </div>
 
     <script type="module">
@@ -75,11 +110,14 @@
         const urlParams = new URLSearchParams(window.location.search);
         const negocioId = urlParams.get('id');
         const premioIdURL = urlParams.get('premio');
-        const accion = urlParams.get('accion'); // 'sello' si viene de NFC
+        const accion = urlParams.get('accion'); // 'sello_nfc' viene del NFC
 
         let clienteId = null;
         let pinNegocio = "";
         let nombreNegocio = "";
+        let intentosPin = 0;
+        let bloqueadoHasta = 0;
+        let targetCardParaSello = null; // Guarda qué tarjeta sellar
 
         window.onload = async function() {
             if (!negocioId) return alert("Enlace inválido.");
@@ -105,8 +143,8 @@
                         document.getElementById('completarPerfilForm').classList.add('hidden');
                         document.getElementById('walleView').classList.remove('hidden');
                         await cargarTarjetas();
-                        if(accion === 'sello') {
-                            sumarSelloDirecto(); // ¡NFC automático!
+                        if(accion === 'sello_nfc') {
+                            sumarSelloDirecto(); // ¡Magia NFC!
                         }
                     }
                 } else {
@@ -118,22 +156,12 @@
             });
         };
 
-        window.mostrarLogin = function() {
-            document.getElementById('tabLogin').classList.add('active');
-            document.getElementById('tabRegistro').classList.remove('active');
-            document.getElementById('loginBox').classList.remove('hidden');
-            document.getElementById('registerBox').classList.add('hidden');
-        }
-        window.mostrarRegistro = function() {
-            document.getElementById('tabRegistro').classList.add('active');
-            document.getElementById('tabLogin').classList.remove('active');
-            document.getElementById('registerBox').classList.remove('hidden');
-            document.getElementById('loginBox').classList.add('hidden');
-        }
+        window.mostrarLogin = function() { document.getElementById('tabLogin').classList.add('active'); document.getElementById('tabRegistro').classList.remove('active'); document.getElementById('loginBox').classList.remove('hidden'); document.getElementById('registerBox').classList.add('hidden'); }
+        window.mostrarRegistro = function() { document.getElementById('tabRegistro').classList.add('active'); document.getElementById('tabLogin').classList.remove('active'); document.getElementById('registerBox').classList.remove('hidden'); document.getElementById('loginBox').classList.add('hidden'); }
+        
         window.login = async function() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
-            if(!email || !pass) return alert("Completa los campos.");
             try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { alert("Error: " + e.message); }
         }
         window.registrar = async function() {
@@ -142,13 +170,12 @@
             const pass = document.getElementById('regPass').value;
             const tel = document.getElementById('regTel').value;
             const nac = document.getElementById('regNac').value;
-            if(!nombre || !email || !pass || !tel || !nac) return alert("Completa todos los campos para registrar.");
+            if(!nombre || !email || !pass || !tel || !nac) return alert("Completa todos los campos.");
             try {
                 const cred = await createUserWithEmailAndPassword(auth, email, pass);
                 await setDoc(doc(db, "negocios", negocioId, "clientes", cred.user.uid), { nombre, contacto: email, telefono: tel, fechaNacimiento: nac });
             } catch(e) {
-                if(e.code === 'auth/email-already-in-use') { alert("Este correo ya está registrado. Inicia sesión para vincularlo."); mostrarLogin(); } 
-                else { alert("Error: " + e.message); }
+                if(e.code === 'auth/email-already-in-use') { alert("Este correo ya está registrado. Inicia sesión para vincularlo."); mostrarLogin(); } else { alert("Error: " + e.message); }
             }
         }
         window.vincularNegocio = async function() {
@@ -160,7 +187,7 @@
             document.getElementById('completarPerfilForm').classList.add('hidden');
             document.getElementById('walleView').classList.remove('hidden');
             await cargarTarjetas();
-            if(accion === 'sello') sumarSelloDirecto();
+            if(accion === 'sello_nfc') sumarSelloDirecto();
         }
         window.cerrarSesion = async function() { await signOut(auth); }
 
@@ -177,43 +204,40 @@
                 const tarjetaRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
                 const tarjetaSnap = await getDoc(tarjetaRef);
                 
-                if(!tarjetaSnap.exists() && pId === premioIdURL) { 
-                    await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }); 
-                } else if(!tarjetaSnap.exists()) { continue; }
+                if(!tarjetaSnap.exists() && pId === premioIdURL) { await setDoc(tarjetaRef, { sellos: premio.sellosIniciales || 0 }); } 
+                else if(!tarjetaSnap.exists()) { continue; }
 
                 const tarjetaData = tarjetaSnap.exists() ? tarjetaSnap.data() : { sellos: premio.sellosIniciales || 0 };
                 let sellosActuales = tarjetaData.sellos || 0;
-
                 let expirado = (premio.vigenciaFin && hoy > premio.vigenciaFin);
 
                 let htmlStamps = '';
                 for(let i=0; i<premio.sellosRequeridos; i++) htmlStamps += i < sellosActuales ? '<div class="stamp filled">⭐</div>' : '<div class="stamp"></div>';
                 const completado = sellosActuales >= premio.sellosRequeridos;
 
-                let accionHTML = '';
                 if (!expirado && completado && !tarjetaData.codigoRedencion) {
                     const code = Math.floor(1000 + Math.random() * 9000).toString();
                     await updateDoc(tarjetaRef, { codigoRedencion: code });
                     tarjetaData.codigoRedencion = code; 
                 }
 
+                let accionHTML = '';
                 if (expirado) {
                     accionHTML = '<p class="expired">❌ Promoción expirada</p>';
                 } else if (completado) {
                     accionHTML = `<p style="color:#28a745; font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${tarjetaData.codigoRedencion}</div><p style="font-size:12px;">Muestra este código al cajero.</p>`;
                 } else {
-                    accionHTML = `<p>Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p><button onclick="validarSelloManual('${pId}')">Sumar Sello (Cajero)</button>`;
+                    accionHTML = `<p>Te faltan ${premio.sellosRequeridos - sellosActuales} sellos</p><button onclick="abrirPinPad('${pId}')">Sumar Sello (Cajero)</button>`;
                 }
 
                 container.innerHTML += `<div class="card"><h2>${premio.nombre}</h2><div class="stamps">${htmlStamps}</div><div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>${accionHTML}</div>`;
             }
         }
 
-        // Nuevo: Sumar sello automático por NFC
+        // --- LÓGICA MAGIC NFC ---
         async function sumarSelloDirecto() {
             const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
             let activeCards = [];
-            
             for(const docSnap of premiosSnap.docs) {
                 const premio = docSnap.data(); const pId = docSnap.id;
                 const tarjetaSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId));
@@ -222,11 +246,7 @@
                 }
             }
 
-            if (activeCards.length === 0) {
-                alert("No tienes tarjetas activas para sumar sellos. Escanea el QR de un premio primero.");
-                limpiarAccionURL();
-                return;
-            }
+            if (activeCards.length === 0) { limpiarAccionURL(); return; }
 
             let targetCardId;
             if (activeCards.length === 1) {
@@ -241,18 +261,72 @@
             }
 
             await sumarSello(targetCardId);
-            limpiarAccionURL(); // Evita que recargue y vuelva a sumar
+            mostrarAnimacionMagica();
+            limpiarAccionURL();
         }
 
-        // Limpia la URL para evitar múltiples sellos al recargar
-        function limpiarAccionURL() {
-            history.replaceState(null, null, window.location.pathname + `?id=${negocioId}`);
+        function mostrarAnimacionMagica() {
+            const overlay = document.getElementById('magicOverlay');
+            overlay.style.display = 'flex';
+            // Generar confetti
+            for(let i=0; i<20; i++) {
+                let c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.animationDelay = Math.random() * 2 + 's';
+                c.style.backgroundColor = ['#ffc107', '#28a745', '#007bff'][Math.floor(Math.random()*3)];
+                overlay.appendChild(c);
+            }
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                overlay.querySelectorAll('.confetti').forEach(c => c.remove());
+            }, 2500);
         }
 
-        // Solo si el cajero usa el botón manual
-        window.validarSelloManual = async function(pIdForzado) {
-            const pin = prompt("Cajero: Ingrese el PIN (Solo si el NFC falla):");
-            if(pin === pinNegocio) { await sumarSello(pIdForzado); } else { alert("PIN incorrecto."); }
+        function limpiarAccionURL() { history.replaceState(null, null, window.location.pathname + `?id=${negocioId}`); }
+
+        // --- LÓGICA PIN PAD ---
+        window.abrirPinPad = function(pId) {
+            if (Date.now() < bloqueadoHasta) {
+                const secs = Math.ceil((bloqueadoHasta - Date.now())/1000);
+                alert("Demasiados intentos. Bloqueado por " + secs + " segundos.");
+                return;
+            }
+            targetCardParaSello = pId;
+            intentosPin = 0;
+            document.getElementById('pinInput').value = '';
+            document.getElementById('pinError').innerText = '';
+            document.getElementById('pinModal').classList.remove('hidden');
+        }
+
+        window.closePinModal = function() {
+            document.getElementById('pinModal').classList.add('hidden');
+            targetCardParaSello = null;
+        }
+
+        window.addPin = function(num) {
+            const input = document.getElementById('pinInput');
+            if(input.value.length < 4) input.value += num;
+        }
+
+        window.submitPin = async function() {
+            const enteredPin = document.getElementById('pinInput').value;
+            if(enteredPin === pinNegocio) {
+                document.getElementById('pinModal').classList.add('hidden');
+                await sumarSello(targetCardParaSello);
+                mostrarAnimacionMagica();
+                targetCardParaSello = null;
+            } else {
+                intentosPin++;
+                if(intentosPin >= 3) {
+                    bloqueadoHasta = Date.now() + 60000; // 60 seg bloqueado
+                    document.getElementById('pinError').innerText = "Bloqueado 60 seg.";
+                    document.getElementById('pinInput').value = '';
+                } else {
+                    document.getElementById('pinError').innerText = "PIN incorrecto. Intentos: " + intentosPin + "/3";
+                    document.getElementById('pinInput').value = '';
+                }
+            }
         }
 
         async function sumarSello(pIdForzado) {
@@ -266,7 +340,6 @@
                     const tarjetaSnap = await getDoc(tarjetaRef);
                     if(tarjetaSnap.exists() && tarjetaSnap.data().sellos < premio.sellosRequeridos) {
                         await updateDoc(tarjetaRef, { sellos: tarjetaSnap.data().sellos + 1 });
-                        alert("¡Sello agregado con éxito!");
                         cargarTarjetas(); return;
                     }
                 }
