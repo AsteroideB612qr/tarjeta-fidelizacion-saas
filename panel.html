@@ -27,12 +27,6 @@
 <body>
     <div class="container">
         <h1 id="tituloNegocio">Cargando panel...</h1>
-        
-        <h2>Seguridad del Sistema</h2>
-        <div class="form-row">
-            <div><label>PIN Cajero (Solo emergencias si falla el QR/NFC):</label><input type="number" id="pinSecreto" placeholder="1234"></div>
-            <div style="display:flex; align-items:flex-end;"><button onclick="guardarPin()">Guardar PIN</button></div>
-        </div>
 
         <div class="info-box">
             <h2>Puntos de Venta (Mostrador)</h2>
@@ -99,11 +93,9 @@
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     document.getElementById('tituloNegocio').innerText = "Panel de: " + docSnap.data().nombre;
-                    const pinGuardado = docSnap.data().pin;
-                    if(pinGuardado) document.getElementById('pinSecreto').value = pinGuardado;
                 }
                 
-                // EL TRUCO ANTI-CACHÉ: Agregamos &t= hora actual a los links
+                // Cache Buster
                 const cacheBuster = new Date().getTime();
                 const walletUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cacheBuster}`;
                 const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cacheBuster}`;
@@ -121,13 +113,6 @@
 
         window.copiarLink = function(elementId) {
             navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => alert('¡Link copiado!'));
-        }
-
-        window.guardarPin = async function() {
-            const pin = document.getElementById('pinSecreto').value;
-            if(!pin) return alert("Ingresa un PIN");
-            await setDoc(docRef, { pin: pin }, { merge: true });
-            alert("PIN guardado.");
         }
 
         window.crearPremio = async function() {
