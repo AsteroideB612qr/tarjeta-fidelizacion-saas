@@ -63,7 +63,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v8.1.0</span>
+        <span class="version-tag">v8.2.1</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -140,6 +140,7 @@
             let ndefReader = null;
             let isStamping = false; // Candado anti-duplicado
             let stampCode = "FIDELIDAD_STAMP"; // Código dinámico de la DB
+            let html5QrCodeInstance = null; // Instancia de la cámara
 
             const icons = {
                 ig: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E4405F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`,
@@ -273,6 +274,7 @@
                 isStamping = false; // Resetear candado
                 document.getElementById('scannerOverlay').style.display = 'flex';
                 
+                // 1. Intentar activar NFC (Solo funciona en Android Chrome)
                 if ('NDEFReader' in window) {
                     try {
                         ndefReader = new NDEFReader();
@@ -283,7 +285,8 @@
                                 for (const record of event.message.records) {
                                     if (record.recordType === "text") {
                                         const text = decoder.decode(record.data);
-                                        if (text.trim() === stampCode) {
+                                        // Usamos includes para ignorar prefijos de idioma que agregan algunas apps NFC
+                                        if (text.includes(stampCode)) {
                                             isStamping = true; // Cerrar candado
                                             detenerEscaneo();
                                             await sumarSello(activeCardId);
@@ -297,10 +300,17 @@
                     } catch(e) { console.log("Error NFC:", e); }
                 }
 
+                // 2. Iniciar cámara QR (Para iOS y fallback de Android)
                 const readerElement = document.getElementById('reader');
                 readerElement.classList.remove('hidden');
-                const html5QrCode = new Html5Qrcode("reader");
-                html5QrCode.start({facingMode:"environment"}, {fps: 10, qrbox: {width: 200, height: 200}},
+                
+                // Limpiar instancia previa si existe
+                if (html5QrCodeInstance) {
+                    try { html5QrCodeInstance.stop(); } catch(e){}
+                }
+                
+                html5QrCodeInstance = new Html5Qrcode("reader");
+                html5QrCodeInstance.start({facingMode:"environment"}, {fps: 10, qrbox: {width: 200, height: 200}},
                     async (decodedText) => {
                         if(isStamping) return;
                         if(decodedText.includes(`id=${negocioId}&accion=sello`)) {
@@ -317,11 +327,20 @@
             window.detenerEscaneo = function() {
                 document.getElementById('scannerOverlay').style.display = 'none';
                 const readerElement = document.getElementById('reader');
-                if(readerElement.classList.contains('hidden')) return;
-                if (typeof Html5Qrcode !== 'undefined') {
-                    try { new Html5Qrcode("reader").stop(); } catch(e){}
+                
+                // Detener la cámara de forma correcta usando la instancia guardada
+                if (html5QrCodeInstance) {
+                    html5QrCodeInstance.stop().then(() => {
+                        html5QrCodeInstance.clear();
+                        html5QrCodeInstance = null;
+                        readerElement.classList.add('hidden');
+                    }).catch(err => {
+                        console.error("Error al detener cámara:", err);
+                        readerElement.classList.add('hidden');
+                    });
+                } else {
+                    readerElement.classList.add('hidden');
                 }
-                readerElement.classList.add('hidden');
                 activeCardId = null;
             }
 
