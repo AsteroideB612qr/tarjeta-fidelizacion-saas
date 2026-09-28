@@ -58,7 +58,7 @@
     </div>
 
     <div id="appView" class="container hidden">
-        <span class="version-tag">v8.1.0</span>
+        <span class="version-tag">v8.2.0</span>
         <h1 id="tituloNegocio">Cargando panel...</h1>
         <div id="subAlert"></div>
         
@@ -85,7 +85,12 @@
                 <div class="pos-card">
                     <p><strong>Acceso Directo (Billetera)</strong><br><small>Cliente lo escanea para ver su avance</small></p>
                     <img id="qrWallet" src="" alt="QR" style="width: 150px; height: 150px;">
-                    <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar</button></div>
+                    <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar Link</button></div>
+                </div>
+                <div class="pos-card">
+                    <p><strong>Sellador (QR)</strong><br><small>El cliente escanea este QR desde la app para sumar sello</small></p>
+                    <img id="qrSello" src="" alt="QR Sello" style="width: 150px; height: 150px;">
+                    <p style="font-size:10px; color:#666; margin-top:5px;">Por seguridad, el link no es visible.</p>
                 </div>
             </div>
         </div>
@@ -212,8 +217,10 @@
         function setupLinks() {
             const cb = new Date().getTime();
             const wUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cb}`;
+            const sUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cb}`;
             document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(wUrl)}`;
             document.getElementById('linkWallet').innerText = wUrl;
+            document.getElementById('qrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(sUrl)}`;
         }
 
         window.mostrarLogin = function() { document.getElementById('loginFormBox').classList.remove('hidden'); document.getElementById('registerFormBox').classList.add('hidden'); }
