@@ -19,6 +19,9 @@
         .expired { color: #dc3545; font-weight: bold; }
         .vigencia { font-size: 12px; color: #6c757d; margin-top: 5px; }
         .codigo-box { background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 24px; letter-spacing: 2px; margin-top: 10px; }
+        .tabs { display: flex; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-bottom: 2px solid #ccc; background: #f1f1f1; }
+        .tab.active { border-bottom: 2px solid #007bff; background: white; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -27,15 +30,39 @@
 
         <!-- Login / Registro -->
         <div id="authForm" class="card hidden">
-            <h2>¡Bienvenido!</h2>
-            <p>Inicia sesión o regístrate para guardar tu progreso.</p>
-            <input type="text" id="clienteNombre" placeholder="Tu nombre (Solo para registrar)">
-            <input type="email" id="clienteEmail" placeholder="Tu Email">
-            <input type="password" id="clientePass" placeholder="Tu Contraseña">
-            <input type="tel" id="clienteTel" placeholder="Celular (Ej: 5212345678)">
-            <input type="date" id="clienteNac" title="Fecha de nacimiento">
-            <button onclick="login()">Iniciar Sesión</button>
-            <button class="btn-blue" onclick="registrar()">Crear Cuenta</button>
+            <div class="tabs">
+                <div class="tab active" id="tabLogin" onclick="mostrarLogin()">Iniciar Sesión</div>
+                <div class="tab" id="tabRegistro" onclick="mostrarRegistro()">Registrarse</div>
+            </div>
+
+            <!-- Vista Login -->
+            <div id="loginBox">
+                <h2>¡Hola de nuevo!</h2>
+                <input type="email" id="loginEmail" placeholder="Tu Email">
+                <input type="password" id="loginPass" placeholder="Tu Contraseña">
+                <button onclick="login()">Iniciar Sesión</button>
+            </div>
+
+            <!-- Vista Registro -->
+            <div id="registerBox" class="hidden">
+                <h2>Crear Cuenta</h2>
+                <input type="text" id="regNombre" placeholder="Tu nombre">
+                <input type="email" id="regEmail" placeholder="Tu Email">
+                <input type="password" id="regPass" placeholder="Tu Contraseña">
+                <input type="tel" id="regTel" placeholder="Celular (Ej: 5212345678)">
+                <input type="date" id="regNac" title="Fecha de nacimiento">
+                <button class="btn-blue" onclick="registrar()">Registrarme</button>
+            </div>
+        </div>
+
+        <!-- Completar Perfil (Si ya tiene cuenta global pero es nuevo en este negocio) -->
+        <div id="completarPerfilForm" class="card hidden">
+            <h2>¡Bienvenido a otro negocio!</h2>
+            <p>Tu cuenta existe, pero necesitas dejar tus datos para <strong id="negocioNombrePerfil"></strong>:</p>
+            <input type="text" id="cpNombre" placeholder="Tu nombre">
+            <input type="tel" id="cpTel" placeholder="Celular (Ej: 5212345678)">
+            <input type="date" id="cpNac" title="Fecha de nacimiento">
+            <button onclick="vincularNegocio()">Vincular mi cuenta</button>
         </div>
 
         <!-- Billetera -->
@@ -59,13 +86,15 @@
 
         let clienteId = null;
         let pinNegocio = "";
+        let nombreNegocio = "";
 
         window.onload = async function() {
             if (!negocioId) return alert("Enlace inválido.");
             try {
                 const docSnap = await getDoc(doc(db, "negocios", negocioId));
                 if (docSnap.exists()) {
-                    document.getElementById('negocioNombre').innerText = "📱 " + docSnap.data().nombre;
+                    nombreNegocio = docSnap.data().nombre;
+                    document.getElementById('negocioNombre').innerText = "📱 " + nombreNegocio;
                     pinNegocio = docSnap.data().pin || "1234";
                 }
             } catch (e) { alert("Error al cargar negocio."); }
@@ -73,36 +102,58 @@
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     clienteId = user.uid;
+                    document.getElementById('authForm').classList.add('hidden');
+                    
                     const clienteSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
                     if (!clienteSnap.exists()) {
-                        alert("Tu cuenta fue eliminada por el negocio. Por favor regístrate nuevamente.");
-                        await signOut(auth);
-                        return;
+                        // Mostrar form de vinculación
+                        document.getElementById('negocioNombrePerfil').innerText = nombreNegocio;
+                        document.getElementById('completarPerfilForm').classList.remove('hidden');
+                        document.getElementById('walleView').classList.add('hidden');
+                    } else {
+                        // Cargar billetera normal
+                        document.getElementById('completarPerfilForm').classList.add('hidden');
+                        document.getElementById('walleView').classList.remove('hidden');
+                        await cargarTarjetas();
+                        if(accion === 'sello') validarSello();
                     }
-                    document.getElementById('authForm').classList.add('hidden');
-                    document.getElementById('walleView').classList.remove('hidden');
-                    await cargarTarjetas();
-                    if(accion === 'sello') validarSello();
                 } else {
                     document.getElementById('authForm').classList.remove('hidden');
+                    document.getElementById('completarPerfilForm').classList.add('hidden');
                     document.getElementById('walleView').classList.add('hidden');
+                    mostrarLogin();
                 }
             });
         };
 
+        window.mostrarLogin = function() {
+            document.getElementById('tabLogin').classList.add('active');
+            document.getElementById('tabRegistro').classList.remove('active');
+            document.getElementById('loginBox').classList.remove('hidden');
+            document.getElementById('registerBox').classList.add('hidden');
+        }
+
+        window.mostrarRegistro = function() {
+            document.getElementById('tabRegistro').classList.add('active');
+            document.getElementById('tabLogin').classList.remove('active');
+            document.getElementById('registerBox').classList.remove('hidden');
+            document.getElementById('loginBox').classList.add('hidden');
+        }
+
         window.login = async function() {
-            const email = document.getElementById('clienteEmail').value;
-            const pass = document.getElementById('clientePass').value;
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            if(!email || !pass) return alert("Completa los campos.");
             try { await signInWithEmailAndPassword(auth, email, pass); } 
-            catch(e) { alert("Error al iniciar sesión: " + e.message); }
+            catch(e) { alert("Error: " + e.message); }
         }
 
         window.registrar = async function() {
-            const nombre = document.getElementById('clienteNombre').value;
-            const email = document.getElementById('clienteEmail').value;
-            const pass = document.getElementById('clientePass').value;
-            const tel = document.getElementById('clienteTel').value;
-            const nac = document.getElementById('clienteNac').value;
+            const nombre = document.getElementById('regNombre').value;
+            const email = document.getElementById('regEmail').value;
+            const pass = document.getElementById('regPass').value;
+            const tel = document.getElementById('regTel').value;
+            const nac = document.getElementById('regNac').value;
             if(!nombre || !email || !pass || !tel || !nac) return alert("Completa todos los campos para registrar.");
             try {
                 const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -111,9 +162,24 @@
                 });
             } catch(e) {
                 if(e.code === 'auth/email-already-in-use') {
-                    alert("Este correo ya está registrado. Inicia sesión con tu contraseña.");
+                    alert("Este correo ya está registrado globalmente. Inicia sesión para vincularlo a este negocio.");
+                    mostrarLogin();
                 } else { alert("Error: " + e.message); }
             }
+        }
+
+        window.vincularNegocio = async function() {
+            const nombre = document.getElementById('cpNombre').value;
+            const tel = document.getElementById('cpTel').value;
+            const nac = document.getElementById('cpNac').value;
+            if(!nombre || !tel || !nac) return alert("Completa tus datos.");
+            
+            await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { 
+                nombre, contacto: auth.currentUser.email, telefono: tel, fechaNacimiento: nac 
+            });
+            document.getElementById('completarPerfilForm').classList.add('hidden');
+            document.getElementById('walleView').classList.remove('hidden');
+            await cargarTarjetas();
         }
 
         window.cerrarSesion = async function() { await signOut(auth); }
@@ -149,10 +215,9 @@
 
                 let accionHTML = '';
                 if (!expirado && completado && !tarjetaData.codigoRedencion) {
-                    // Generar código de redención de 4 dígitos
                     const code = Math.floor(1000 + Math.random() * 9000).toString();
                     await updateDoc(tarjetaRef, { codigoRedencion: code });
-                    tarjetaData.codigoRedencion = code; // Actualizar en memoria
+                    tarjetaData.codigoRedencion = code; 
                 }
 
                 if (expirado) {
