@@ -13,19 +13,20 @@
         button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; color: white; }
         button:hover { background-color: #0056b3; }
         .btn-copy { background-color: #17a2b8; padding: 5px 10px; font-size: 12px; margin-left: 10px; }
-        .btn-copy:hover { background-color: #138496; }
         .btn-danger { background-color: #dc3545; padding: 5px 10px; font-size: 12px; }
-        .btn-danger:hover { background-color: #c82333; }
+        .btn-success { background-color: #28a745; padding: 5px 10px; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: middle; }
         th { background-color: #f8f9fa; }
         a { color: #007bff; text-decoration: none; word-break: break-all; }
+        .status-active { color: #28a745; font-weight: bold; }
+        .status-expired { color: #dc3545; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🚀 Panel de Administración SaaS</h1>
-        <p>Aquí puedes registrar y gestionar los negocios que usan tu plataforma.</p>
+        <p>Gestiona los negocios, suscripciones y cobros.</p>
 
         <h2>Crear Nuevo Negocio</h2>
         <div class="form-group">
@@ -37,54 +38,52 @@
         <table>
             <thead>
                 <tr>
-                    <th>Nombre del Negocio</th>
-                    <th>Enlace del Panel</th>
+                    <th>Nombre</th>
+                    <th>Enlace Panel</th>
+                    <th>Estado Suscripción</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaNegocios">
-                <tr><td colspan="3">Cargando negocios...</td></tr>
+                <tr><td colspan="4">Cargando...</td></tr>
             </tbody>
         </table>
     </div>
 
     <script type="module">
         import { db } from "./firebase.js";
-        import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         window.crearNegocio = async function() {
             const nombre = document.getElementById('nombreNegocio').value;
             if(!nombre) return alert("Por favor ingresa un nombre");
-
             try {
-                await addDoc(collection(db, "negocios"), {
-                    nombre: nombre,
-                    creadoEn: new Date()
-                });
+                await addDoc(collection(db, "negocios"), { nombre: nombre, creadoEn: new Date() });
                 document.getElementById('nombreNegocio').value = '';
                 cargarNegocios();
-            } catch (e) {
-                alert("Error al crear: " + e.message);
-            }
+            } catch (e) { alert("Error al crear: " + e.message); }
         }
 
         window.eliminarNegocio = async function(id, nombre) {
-            if(confirm(`¿Seguro que quieres eliminar a ${nombre}? Se borrarán todos sus datos, premios y clientes.`)) {
-                try {
-                    await deleteDoc(doc(db, "negocios", id));
-                    cargarNegocios();
-                } catch (e) {
-                    alert("Error al eliminar.");
-                }
+            if(confirm(`¿Seguro que quieres eliminar a ${nombre}?`)) {
+                try { await deleteDoc(doc(db, "negocios", id)); cargarNegocios(); } 
+                catch (e) { alert("Error al eliminar."); }
             }
         }
 
         window.copiarLinkPanel = function(link) {
-            navigator.clipboard.writeText(link).then(() => {
-                alert('¡Enlace del panel copiado al portapapeles!');
-            }).catch(err => {
-                alert('Error al copiar: ' + err);
-            });
+            navigator.clipboard.writeText(link).then(() => alert('¡Enlace copiado!')).catch(err => alert('Error: ' + err));
+        }
+
+        window.extenderSuscripcion = async function(id) {
+            try {
+                // Extender 30 días desde hoy
+                const newDate = new Date();
+                newDate.setDate(newDate.getDate() + 30);
+                await updateDoc(doc(db, "negocios", id), { fechaVencimiento: newDate.getTime() });
+                alert("¡Suscripción extendida por 30 días!");
+                cargarNegocios();
+            } catch(e) { alert("Error al extender."); }
         }
 
         async function cargarNegocios() {
@@ -93,10 +92,7 @@
             const q = query(collection(db, "negocios"), orderBy("creadoEn", "desc"));
             const querySnapshot = await getDocs(q);
 
-            if(querySnapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="3">Aún no hay negocios. Crea el primero arriba.</td></tr>';
-                return;
-            }
+            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="4">Aún no hay negocios.</td></tr>'; return; }
 
             const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
 
@@ -105,19 +101,26 @@
                 const id = docSnap.id;
                 const linkPanel = `${baseUrl}panel.html?id=${id}`;
                 
+                let estadoHtml = '<span class="status-expired">Vencido/Sin Pagar</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}')">Activar +30 días</button>';
+                if(negocio.fechaVencimiento) {
+                    const fecha = new Date(negocio.fechaVencimiento);
+                    if(fecha > new Date()) {
+                        estadoHtml = `<span class="status-active">Activo</span><br>Vence: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}')">Extender +30 días</button>`;
+                    } else {
+                        estadoHtml = `<span class="status-expired">Vencido</span><br>Venció: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}')">Reactivar +30 días</button>`;
+                    }
+                }
+                
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>${negocio.nombre}</strong></td>
-                        <td>
-                            <a href="${linkPanel}" target="_blank">${linkPanel}</a>
-                            <button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar Link</button>
-                        </td>
+                        <td><a href="${linkPanel}" target="_blank">${linkPanel}</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar Link</button></td>
+                        <td>${estadoHtml}</td>
                         <td><button class="btn-danger" onclick="eliminarNegocio('${id}', '${negocio.nombre}')">Eliminar</button></td>
                     </tr>
                 `;
             });
         }
-
         cargarNegocios();
     </script>
 </body>
