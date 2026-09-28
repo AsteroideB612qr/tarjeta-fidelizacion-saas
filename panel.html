@@ -11,7 +11,7 @@
         input, select { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; color: white; margin-top: 5px;}
         button:hover { background-color: #0056b3; }
-        .btn-danger { background-color: #dc3545; } .btn-wa { background-color: #25D366; } .btn-success { background-color: #28a745; }
+        .btn-danger { background-color: #dc3545; } .btn-wa { background-color: #25D366; } .btn-success { background-color: #28a745; } .btn-gray { background-color: #6c757d; }
         .info-box { background: #e7f3ff; padding: 15px; border-radius: 5px; margin-top: 20px; text-align: center; word-break: break-all; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
@@ -19,23 +19,29 @@
         .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
         .form-row > div { flex: 1; min-width: 150px; }
         .card-info { font-size: 12px; background: #f9f9f9; padding: 5px; border-radius: 4px; margin-top: 5px; }
+        .link-box { background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 5px; text-align: left; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 id="tituloNegocio">Cargando panel...</h1>
         
-        <h2>Seguridad y Puntos de Venta</h2>
+        <h2>Puntos de Venta y Seguridad</h2>
         <div class="form-row">
-            <div><label>PIN Cajero (Para poner sellos):</label><input type="number" id="pinSecreto" placeholder="1234"></div>
+            <div><label>PIN Cajero (Solo emergencias si NFC falla):</label><input type="number" id="pinSecreto" placeholder="1234"></div>
             <div style="display:flex; align-items:flex-end;"><button onclick="guardarPin()">Guardar PIN</button></div>
         </div>
 
         <div class="info-box">
-            <h2>Código QR y NFC (Sumar Sello)</h2>
-            <img id="qrImagen" src="" alt="Código QR" style="width: 200px; height: 200px; margin: auto;">
-            <p style="margin-top:10px; font-size:12px;"><strong>Link NFC:</strong> <span id="linkNfc"></span></p>
-            <button onclick="copiarNfc()">Copiar Link NFC</button>
+            <h2>Mostrador: Acceso y NFC</h2>
+            <p><strong>1. QR para Acceso a Billetera:</strong> El cliente escanea este código para ver su avance. (No suma sellos).</p>
+            <img id="qrImagen" src="" alt="Código QR" style="width: 150px; height: 150px; margin: auto;">
+            <div class="link-box"><strong>Link Billetera:</strong><br><span id="linkWallet"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px 10px; margin-top:5px;">Copiar</button></div>
+            
+            <hr style="margin: 15px 0;">
+            
+            <p><strong>2. Tag NFC para Sumar Sellos:</strong> Graba este link en un tag NFC físico. Al acercar el celular, sumará 1 sello automáticamente.</p>
+            <div class="link-box"><strong>Link NFC (Sumar Sello):</strong><br><span id="linkNfc"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px 10px; margin-top:5px;">Copiar Link NFC</button></div>
         </div>
 
         <h2>Validar Premio Canjeado</h2>
@@ -58,7 +64,7 @@
 
         <h2>Premios Activos</h2>
         <table>
-            <thead><tr><th>Premio</th><th>Vigencia</th><th>Enlace Cliente</th><th>Acción</th></tr></thead>
+            <thead><tr><th>Premio</th><th>Vigencia</th><th>Enlace Cliente (Activar Tarjeta)</th><th>Acción</th></tr></thead>
             <tbody id="tablaPremios"><tr><td colspan="4">Cargando...</td></tr></tbody>
         </table>
 
@@ -90,14 +96,24 @@
                     const pinGuardado = docSnap.data().pin;
                     if(pinGuardado) document.getElementById('pinSecreto').value = pinGuardado;
                 }
+                
+                // Links separados para seguridad
+                const walletUrl = `${baseUrl}cliente.html?id=${negocioId}`;
                 const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello`;
-                document.getElementById('qrImagen').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(selloUrl)}`;
+                
+                document.getElementById('qrImagen').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
+                document.getElementById('linkWallet').innerText = walletUrl;
                 document.getElementById('linkNfc').innerText = selloUrl;
                 
                 cargarPremios();
                 cargarClientes();
             } catch (e) { alert("Error al cargar datos."); }
         };
+
+        window.copiarLink = function(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => alert('¡Link copiado!'));
+        }
 
         window.guardarPin = async function() {
             const pin = document.getElementById('pinSecreto').value;
@@ -106,23 +122,15 @@
             alert("PIN guardado.");
         }
 
-        window.copiarNfc = function() {
-            navigator.clipboard.writeText(document.getElementById('linkNfc').innerText);
-            alert("Link copiado!");
-        }
-
         window.crearPremio = async function() {
             const nombre = document.getElementById('premioNombre').value;
             const sellos = parseInt(document.getElementById('premioSellos').value);
             const iniciales = parseInt(document.getElementById('premioIniciales').value) || 0;
             const inicio = document.getElementById('premioInicio').value;
             const fin = document.getElementById('premioFin').value;
-            
             if(!nombre || !sellos || !inicio || !fin) return alert("Completa todos los campos del premio.");
             try {
-                await addDoc(collection(db, "negocios", negocioId, "premios"), { 
-                    nombre, sellosRequeridos: sellos, sellosIniciales: iniciales, vigenciaInicio: inicio, vigenciaFin: fin 
-                });
+                await addDoc(collection(db, "negocios", negocioId, "premios"), { nombre, sellosRequeridos: sellos, sellosIniciales: iniciales, vigenciaInicio: inicio, vigenciaFin: fin });
                 document.getElementById('premioNombre').value = ''; document.getElementById('premioSellos').value = ''; document.getElementById('premioIniciales').value = '0';
                 document.getElementById('premioInicio').value = ''; document.getElementById('premioFin').value = '';
                 cargarPremios();
@@ -149,8 +157,6 @@
             const tbody = document.getElementById('tablaClientes');
             tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
             clientesData = [];
-            
-            // Mapear premios para saber el nombre
             const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
             const premiosMap = {};
             premiosSnap.forEach(d => premiosMap[d.id] = d.data());
@@ -163,18 +169,14 @@
                 const c = docSnap.data();
                 const id = docSnap.id;
                 clientesData.push(c);
-                
-                // Obtener tarjetas del cliente
                 const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
                 let tarjetasHtml = '<span style="color:#999;">Ninguna activa</span>';
-                
                 if (!tarjetasSnap.empty) {
                     tarjetasHtml = '';
                     tarjetasSnap.forEach(tDoc => {
                         const t = tDoc.data();
                         const pNombre = premiosMap[tDoc.id] ? premiosMap[tDoc.id].nombre : 'Premio eliminado';
                         const pTotal = premiosMap[tDoc.id] ? premiosMap[tDoc.id].sellosRequeridos : '?';
-                        
                         if(t.codigoRedencion) {
                             tarjetasHtml += `<div class="card-info" style="color:#dc3545; font-weight:bold;">🏆 ${pNombre}: LISTO (Código: ${t.codigoRedencion})</div>`;
                         } else {
@@ -182,7 +184,6 @@
                         }
                     });
                 }
-
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>${c.nombre}</strong><br><small>${c.contacto}</small><br><small>📱 ${c.telefono || 'N/A'}</small><br><small>🎂 ${c.fechaNacimiento || 'N/A'}</small></td>
@@ -198,7 +199,6 @@
             if(!telefono) return alert("Este cliente no registró teléfono.");
             const msg = document.getElementById('msg-'+id).value;
             const cleanTel = telefono.replace(/[^0-9]/g, '');
-            // El truco para que pre-cargue el texto en WhatsApp Web
             const url = `https://wa.me/${cleanTel}?text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
         }
@@ -206,20 +206,13 @@
         window.validarRedencion = async function() {
             const code = document.getElementById('inputRedencion').value.trim();
             if(!code) return alert("Ingresa el código.");
-            
             try {
-                // Buscar en todos los clientes si tienen ese código
                 const querySnapshot = await getDocs(collection(db, "negocios", negocioId, "clientes"));
-                let encontrado = false;
-                
                 for (const docSnap of querySnapshot.docs) {
                     const id = docSnap.id;
                     const tarjetasSnap = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
-                    
                     for (const tDoc of tarjetasSnap.docs) {
-                        const t = tDoc.data();
-                        if(t.codigoRedencion === code) {
-                            // Encontrado! Borramos la tarjeta (desaparece de la billetera)
+                        if(tDoc.data().codigoRedencion === code) {
                             await deleteDoc(doc(db, "negocios", negocioId, "clientes", id, "tarjetas", tDoc.id));
                             alert("¡Premio canjeado con éxito! La tarjeta ha sido eliminada del cliente.");
                             document.getElementById('inputRedencion').value = '';
@@ -228,25 +221,18 @@
                         }
                     }
                 }
-                if(!encontrado) alert("Código no válido o ya canjeado.");
-            } catch(e) {
-                alert("Error al validar: " + e.message);
-            }
+                alert("Código no válido o ya canjeado.");
+            } catch(e) { alert("Error al validar."); }
         }
 
         window.eliminarCliente = async function(id) {
-            if(confirm("¿Eliminar a este cliente?")) {
-                await deleteDoc(doc(db, "negocios", negocioId, "clientes", id));
-                cargarClientes();
-            }
+            if(confirm("¿Eliminar a este cliente?")) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id)); cargarClientes(); }
         }
 
         window.descargarCSV = function() {
             if(clientesData.length === 0) return alert("No hay clientes.");
             let csv = "Nombre,Email,Telefono,FechaNacimiento\n";
-            clientesData.forEach(c => {
-                csv += `${c.nombre},${c.contacto},${c.telefono || ''},${c.fechaNacimiento || ''}\n`;
-            });
+            clientesData.forEach(c => { csv += `${c.nombre},${c.contacto},${c.telefono || ''},${c.fechaNacimiento || ''}\n`; });
             const blob = new Blob([csv], { type: 'text/csv' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
