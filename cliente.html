@@ -86,7 +86,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v7.0.0</span>
+        <span class="version-tag">v7.1.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -138,7 +138,14 @@
         const urlParams = new URLSearchParams(window.location.search);
         const negocioId = urlParams.get('id');
         const premioIdURL = urlParams.get('premio');
-        const accion = urlParams.get('accion'); 
+        let accion = urlParams.get('accion'); 
+
+        // Limpiar la URL inmediatamente si tiene 'accion' para evitar que se guarde en el acceso directo
+        if (accion === 'sello') {
+            history.replaceState(null, null, window.location.pathname + `?id=${negocioId}`);
+        }
+
+        const baseUrl = window.location.origin + window.location.pathname.replace('cliente.html', '');
 
         let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
         let isExpired = true, clientName = "";
@@ -172,8 +179,13 @@
                     // Configurar Icono de Acceso Directo (PWA Manifest Dinámico)
                     if(logoUrl) {
                         const manifest = {
-                            name: nombreNegocio, short_name: nombreNegocio, display: "standalone",
-                            background_color: "#ffffff", theme_color: colorFondo,
+                            name: nombreNegocio, 
+                            short_name: (nombreNegocio || "Fidelidad").substring(0,12), 
+                            display: "standalone",
+                            background_color: "#ffffff", 
+                            theme_color: colorFondo,
+                            start_url: `${baseUrl}cliente.html?id=${negocioId}`, // URL LIMPIA SIN ACCION
+                            scope: `${baseUrl}cliente.html`,
                             icons: [{ src: logoUrl, sizes: "512x512", type: "image/png", purpose: "any" }]
                         };
                         const stringManifest = JSON.stringify(manifest);
@@ -204,9 +216,16 @@
                         document.getElementById('walleView').classList.remove('hidden');
                         renderHeader(); 
                         await cargarTarjetas();
+                        
+                        // Lógica anti-sello fantasma con 5 segundos de margen
                         if(accion === 'sello' && !isExpired) {
-                            const k = 'stamped_' + negocioId;
-                            if(sessionStorage.getItem(k) !== 'true') { sessionStorage.setItem(k, 'true'); sumarSelloDirecto(); } else { limpiarAccionURL(); }
+                            const lastStampTime = localStorage.getItem('lastStampTime_' + negocioId);
+                            const now = new Date().getTime();
+                            if (!lastStampTime || (now - lastStampTime > 5000)) {
+                                localStorage.setItem('lastStampTime_' + negocioId, now);
+                                sumarSelloDirecto(); 
+                            }
+                            accion = null; // Limpiar variable para que no se vuelva a ejecutar
                         }
                     }
                 } else {
@@ -284,9 +303,9 @@
             if(isExpired) return;
             const pS = await getDocs(collection(db, "negocios", negocioId, "premios")); let aC = [];
             for(const d of pS.docs) { const p=d.data(), pId=d.id; const tS=await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId)); let s=0, hR=false; if(tS.exists()) { s=tS.data().sellos||0; hR=!!tS.data().codigoRedencion; } else if(p.visibilidad==='publico') s=p.sellosIniciales||0; else continue; if(s<p.sellosRequeridos && !hR) aC.push({pId, n:p.nombre}); }
-            if(aC.length===0) { limpiarAccionURL(); return; } let tId;
-            if(aC.length===1) tId=aC[0].pId; else { let o="¿A cuál sumar?\n"; aC.forEach((c,i)=>o+=`${i+1}. ${c.n}\n`); const s=prompt(o); const i=parseInt(s)-1; if(isNaN(i)||i<0||i>=aC.length){limpiarAccionURL();return;} tId=aC[i].pId; }
-            await sumarSello(tId); mostrarAnimacionMagica(); limpiarAccionURL();
+            if(aC.length===0) { return; } let tId;
+            if(aC.length===1) tId=aC[0].pId; else { let o="¿A cuál sumar?\n"; aC.forEach((c,i)=>o+=`${i+1}. ${c.n}\n`); const s=prompt(o); const i=parseInt(s)-1; if(isNaN(i)||i<0||i>=aC.length){return;} tId=aC[i].pId; }
+            await sumarSello(tId); mostrarAnimacionMagica();
         }
 
         function mostrarAnimacionMagica() {
@@ -294,8 +313,6 @@
             for(let i=0; i<30; i++) { let c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.animationDelay=Math.random()*2+'s'; c.style.backgroundColor=[colorSello,colorFondo,'#fff'][Math.floor(Math.random()*3)]; o.appendChild(c); }
             setTimeout(()=>{o.style.display='none'; o.querySelectorAll('.confetti').forEach(c=>c.remove());}, 2500);
         }
-
-        function limpiarAccionURL() { history.replaceState(null, null, window.location.pathname + `?id=${negocioId}`); }
 
         window.iniciarEscaneoQR = function(pId) {
             const r = document.getElementById('reader'); r.classList.remove('hidden'); const h = new Html5Qrcode("reader");
