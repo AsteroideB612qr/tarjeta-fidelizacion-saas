@@ -43,7 +43,7 @@
                     <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar Link</button></div>
                 </div>
                 <div class="pos-card">
-                    <p><strong>2. Sellador (QR / NFC)</strong><br><small>Cliente lo escanea desde la app o graba en NFC</small></p>
+                    <p><strong>2. Sellador (QR / NFC)</strong><br><small>Sella automáticamente al escanear</small></p>
                     <img id="qrSello" src="" alt="QR Sello" style="width: 150px; height: 150px;">
                     <div class="link-box"><span id="linkNfc" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px;">Copiar Link Sellador</button></div>
                 </div>
@@ -103,8 +103,10 @@
                     if(pinGuardado) document.getElementById('pinSecreto').value = pinGuardado;
                 }
                 
-                const walletUrl = `${baseUrl}cliente.html?id=${negocioId}`;
-                const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello`;
+                // EL TRUCO ANTI-CACHÉ: Agregamos &t= hora actual a los links
+                const cacheBuster = new Date().getTime();
+                const walletUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cacheBuster}`;
+                const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cacheBuster}`;
                 
                 document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
                 document.getElementById('linkWallet').innerText = walletUrl;
