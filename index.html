@@ -15,6 +15,7 @@
         .btn-copy { background-color: #17a2b8; padding: 5px 10px; font-size: 12px; margin-left: 10px; }
         .btn-danger { background-color: #dc3545; padding: 5px 10px; font-size: 12px; }
         .btn-success { background-color: #28a745; padding: 5px 10px; font-size: 12px; }
+        .btn-gray { background-color: #6c757d; padding: 5px 10px; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: middle; }
         th { background-color: #f8f9fa; }
@@ -22,6 +23,12 @@
         .status-active { color: #28a745; font-weight: bold; }
         .status-expired { color: #dc3545; font-weight: bold; }
         .stamp-code { background: #f8f9fa; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #333; display: inline-block; margin-bottom: 5px; }
+        
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:100; }
+        .modal-box { background:white; padding:25px; border-radius:10px; width:400px; max-width: 90%; text-align:center; }
+        .qr-grid { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
+        .qr-item { background: #f9f9f9; padding: 15px; border-radius: 8px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -40,8 +47,8 @@
             <thead>
                 <tr>
                     <th>Nombre</th>
-                    <th>Enlace Panel</th>
-                    <th>Código NFC (Stamp)</th>
+                    <th>Panel Negocio</th>
+                    <th>Código NFC</th>
                     <th>Estado Suscripción</th>
                     <th>Acciones</th>
                 </tr>
@@ -50,6 +57,30 @@
                 <tr><td colspan="5">Cargando...</td></tr>
             </tbody>
         </table>
+    </div>
+
+    <div id="qrModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3>QRs y Links de: <span id="qrModalName"></span></h3>
+            <p style="font-size:12px; color:#666;">Usa estos links para personalizar las tarjetas físicas o tags NFC.</p>
+            
+            <div class="qr-grid">
+                <div class="qr-item">
+                    <p><strong>1. Billetera (Acceso)</strong></p>
+                    <img id="modalQrWallet" src="" style="width: 120px; height: 120px;">
+                    <div style="margin-top:10px;"><input type="text" id="modalWalletLink" readonly style="width:100%; font-size:10px; text-align:center;"></div>
+                    <button class="btn-copy" onclick="copiarModalLink('modalWalletLink')">Copiar Link</button>
+                </div>
+                <div class="qr-item">
+                    <p><strong>2. Sellador (QR/NFC)</strong></p>
+                    <img id="modalQrSello" src="" style="width: 120px; height: 120px;">
+                    <div style="margin-top:10px;"><input type="text" id="modalSelloLink" readonly style="width:100%; font-size:10px; text-align:center;"></div>
+                    <button class="btn-copy" onclick="copiarModalLink('modalSelloLink')">Copiar Link</button>
+                </div>
+            </div>
+            
+            <button class="btn-gray" onclick="closeQrModal()" style="margin-top: 25px; width: auto; padding: 8px 20px;">Cerrar</button>
+        </div>
     </div>
 
     <script type="module">
@@ -99,6 +130,29 @@
             }
         }
 
+        window.verQRs = function(id, nombre) {
+            const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+            const walletUrl = `${baseUrl}cliente.html?id=${id}`;
+            const selloUrl = `${baseUrl}cliente.html?id=${id}&accion=sello`;
+            
+            document.getElementById('qrModalName').innerText = nombre;
+            document.getElementById('modalQrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
+            document.getElementById('modalWalletLink').value = walletUrl;
+            document.getElementById('modalQrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(selloUrl)}`;
+            document.getElementById('modalSelloLink').value = selloUrl;
+            
+            document.getElementById('qrModal').classList.remove('hidden');
+        }
+
+        window.copiarModalLink = function(inputId) {
+            const link = document.getElementById(inputId).value;
+            navigator.clipboard.writeText(link).then(() => alert('¡Link copiado!'));
+        }
+
+        window.closeQrModal = function() {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+
         async function cargarNegocios() {
             const tbody = document.getElementById('tablaNegocios');
             tbody.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
@@ -131,7 +185,10 @@
                             <td><a href="${linkPanel}" target="_blank">${linkPanel}</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar Link</button></td>
                             <td><span class="stamp-code">${sCode}</span><br><button class="btn-copy" onclick="editarStamp('${id}', '${sCode}')">Editar</button></td>
                             <td>${estadoHtml}</td>
-                            <td><button class="btn-danger" onclick="eliminarNegocio('${id}', '${negocio.nombre}')">Eliminar</button></td>
+                            <td>
+                                <button class="btn-copy" onclick="verQRs('${id}', '${negocio.nombre}')">Ver QRs y Links</button><br><br>
+                                <button class="btn-danger" onclick="eliminarNegocio('${id}', '${negocio.nombre}')">Eliminar</button>
+                            </td>
                         </tr>
                     `;
                 });
