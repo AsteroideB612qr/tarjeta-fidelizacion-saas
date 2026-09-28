@@ -20,28 +20,34 @@
         .form-row > div { flex: 1; min-width: 150px; }
         .card-info { font-size: 12px; background: #f9f9f9; padding: 5px; border-radius: 4px; margin-top: 5px; }
         .link-box { background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 5px; text-align: left; }
+        .pos-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+        .pos-card { background: white; padding: 15px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 id="tituloNegocio">Cargando panel...</h1>
         
-        <h2>Puntos de Venta y Seguridad</h2>
+        <h2>Seguridad del Sistema</h2>
         <div class="form-row">
-            <div><label>PIN Cajero (Solo emergencias si NFC falla):</label><input type="number" id="pinSecreto" placeholder="1234"></div>
+            <div><label>PIN Cajero (Máximo 3 intentos o se bloquea):</label><input type="number" id="pinSecreto" placeholder="1234"></div>
             <div style="display:flex; align-items:flex-end;"><button onclick="guardarPin()">Guardar PIN</button></div>
         </div>
 
         <div class="info-box">
-            <h2>Mostrador: Acceso y NFC</h2>
-            <p><strong>1. QR para Acceso a Billetera:</strong> El cliente escanea este código para ver su avance. (No suma sellos).</p>
-            <img id="qrImagen" src="" alt="Código QR" style="width: 150px; height: 150px; margin: auto;">
-            <div class="link-box"><strong>Link Billetera:</strong><br><span id="linkWallet"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px 10px; margin-top:5px;">Copiar</button></div>
-            
-            <hr style="margin: 15px 0;">
-            
-            <p><strong>2. Tag NFC para Sumar Sellos:</strong> Graba este link en un tag NFC físico. Al acercar el celular, sumará 1 sello automáticamente.</p>
-            <div class="link-box"><strong>Link NFC (Sumar Sello):</strong><br><span id="linkNfc"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px 10px; margin-top:5px;">Copiar Link NFC</button></div>
+            <h2>Puntos de Venta (Mostrador)</h2>
+            <div class="pos-grid">
+                <div class="pos-card">
+                    <p><strong>1. Acceso por QR</strong><br><small>Para ver avance o sellar con PIN</small></p>
+                    <img id="qrImagen" src="" alt="Código QR" style="width: 150px; height: 150px;">
+                    <div class="link-box"><span id="linkWallet" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkWallet')" style="width:auto; padding:5px;">Copiar Link QR</button></div>
+                </div>
+                <div class="pos-card">
+                    <p><strong>2. Tag NFC (Mágico)</strong><br><small>Sella automáticamente al acercar</small></p>
+                    <div style="font-size: 40px;">📲</div>
+                    <div class="link-box"><span id="linkNfc" style="font-size:10px;"></span><br><button class="btn-gray" onclick="copiarLink('linkNfc')" style="width:auto; padding:5px;">Copiar Link NFC</button></div>
+                </div>
+            </div>
         </div>
 
         <h2>Validar Premio Canjeado</h2>
@@ -97,13 +103,12 @@
                     if(pinGuardado) document.getElementById('pinSecreto').value = pinGuardado;
                 }
                 
-                // Links separados para seguridad
                 const walletUrl = `${baseUrl}cliente.html?id=${negocioId}`;
-                const selloUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello`;
+                const nfcUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello_nfc`;
                 
                 document.getElementById('qrImagen').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
                 document.getElementById('linkWallet').innerText = walletUrl;
-                document.getElementById('linkNfc').innerText = selloUrl;
+                document.getElementById('linkNfc').innerText = nfcUrl;
                 
                 cargarPremios();
                 cargarClientes();
@@ -111,8 +116,7 @@
         };
 
         window.copiarLink = function(elementId) {
-            const text = document.getElementById(elementId).innerText;
-            navigator.clipboard.writeText(text).then(() => alert('¡Link copiado!'));
+            navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => alert('¡Link copiado!'));
         }
 
         window.guardarPin = async function() {
