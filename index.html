@@ -52,13 +52,13 @@
 
     <script type="module">
         import { db } from "./firebase.js";
-        import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         window.crearNegocio = async function() {
             const nombre = document.getElementById('nombreNegocio').value;
             if(!nombre) return alert("Por favor ingresa un nombre");
             try {
-                await addDoc(collection(db, "negocios"), { nombre: nombre, creadoEn: new Date() });
+                await addDoc(collection(db, "negocios"), { nombre: nombre, creadoEn: new Date().getTime() });
                 document.getElementById('nombreNegocio').value = '';
                 cargarNegocios();
             } catch (e) { alert("Error al crear: " + e.message); }
@@ -75,52 +75,77 @@
             navigator.clipboard.writeText(link).then(() => alert('¡Enlace copiado!')).catch(err => alert('Error: ' + err));
         }
 
-        window.extenderSuscripcion = async function(id) {
+        window.extenderSuscripcion = async function(id, currentVencimiento) {
             try {
-                // Extender 30 días desde hoy
-                const newDate = new Date();
-                newDate.setDate(newDate.getDate() + 30);
-                await updateDoc(doc(db, "negocios", id), { fechaVencimiento: newDate.getTime() });
+                const now = new Date();
+                let baseDate = now;
+                
+                // Si tiene vencimiento y aún no ha expirado, sumamos 30 días a esa fecha futura
+                if(currentVencimiento && currentVencimiento > now.getTime()) {
+                    baseDate = new Date(currentVencimiento);
+                }
+                
+                // Sumar 30 días a la fecha base
+                baseDate.setDate(baseDate.getDate() + 30);
+                
+                await updateDoc(doc(db, "negocios", id), { fechaVencimiento: baseDate.getTime() });
                 alert("¡Suscripción extendida por 30 días!");
                 cargarNegocios();
-            } catch(e) { alert("Error al extender."); }
+            } catch(e) { 
+                console.error(e);
+                alert("Error al extender."); 
+            }
         }
 
         async function cargarNegocios() {
             const tbody = document.getElementById('tablaNegocios');
-            tbody.innerHTML = '';
-            const q = query(collection(db, "negocios"), orderBy("creadoEn", "desc"));
-            const querySnapshot = await getDocs(q);
-
-            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="4">Aún no hay negocios.</td></tr>'; return; }
-
-            const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
-
-            querySnapshot.forEach((docSnap) => {
-                const negocio = docSnap.data();
-                const id = docSnap.id;
-                const linkPanel = `${baseUrl}panel.html?id=${id}`;
+            tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
+            
+            try {
+                // Quitamos el orderBy para evitar errores si algún documento no tiene el campo
+                const querySnapshot = await getDocs(collection(db, "negocios"));
                 
-                let estadoHtml = '<span class="status-expired">Vencido/Sin Pagar</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}')">Activar +30 días</button>';
-                if(negocio.fechaVencimiento) {
-                    const fecha = new Date(negocio.fechaVencimiento);
-                    if(fecha > new Date()) {
-                        estadoHtml = `<span class="status-active">Activo</span><br>Vence: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}')">Extender +30 días</button>`;
-                    } else {
-                        estadoHtml = `<span class="status-expired">Vencido</span><br>Venció: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}')">Reactivar +30 días</button>`;
-                    }
+                if(querySnapshot.empty) { 
+                    tbody.innerHTML = '<tr><td colspan="4">Aún no hay negocios.</td></tr>'; 
+                    return; 
                 }
-                
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${negocio.nombre}</strong></td>
-                        <td><a href="${linkPanel}" target="_blank">${linkPanel}</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar Link</button></td>
-                        <td>${estadoHtml}</td>
-                        <td><button class="btn-danger" onclick="eliminarNegocio('${id}', '${negocio.nombre}')">Eliminar</button></td>
-                    </tr>
-                `;
-            });
+
+                const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+                tbody.innerHTML = '';
+
+                querySnapshot.forEach((docSnap) => {
+                    const negocio = docSnap.data();
+                    const id = docSnap.id;
+                    const linkPanel = `${baseUrl}panel.html?id=${id}`;
+                    
+                    let estadoHtml = '<span class="status-expired">Vencido/Sin Pagar</span><br><button class="btn-success" onclick="extenderSuscripcion(\'${id}\', null)">Activar +30 días</button>';
+                    
+                    if(negocio.fechaVencimiento) {
+                        const fecha = new Date(negocio.fechaVencimiento);
+                        const now = new Date();
+                        
+                        if(fecha > now) {
+                            estadoHtml = `<span class="status-active">Activo</span><br>Vence: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${negocio.fechaVencimiento})">Extender +30 días</button>`;
+                        } else {
+                            estadoHtml = `<span class="status-expired">Vencido</span><br>Venció: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${negocio.fechaVencimiento})">Reactivar +30 días</button>`;
+                        }
+                    }
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${negocio.nombre}</strong></td>
+                            <td><a href="${linkPanel}" target="_blank">${linkPanel}</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar Link</button></td>
+                            <td>${estadoHtml}</td>
+                            <td><button class="btn-danger" onclick="eliminarNegocio('${id}', '${negocio.nombre}')">Eliminar</button></td>
+                        </tr>
+                    `;
+                });
+            } catch(e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="4">Error al cargar los negocios.</td></tr>';
+            }
         }
+        
         cargarNegocios();
     </script>
 </body>
