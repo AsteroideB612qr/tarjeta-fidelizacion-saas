@@ -18,9 +18,7 @@
         .container { max-width: 400px; margin: auto; padding: 25px 20px; position: relative; }
         .version-tag { position: absolute; top: 25px; right: 25px; background: #007bff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; z-index: 10; }
         
-        #walletHeader { 
-            display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 20px; margin-bottom: 45px;
-        }
+        #walletHeader { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 20px; margin-bottom: 45px; }
         .wallet-logo { width: 70px; height: 70px; border-radius: 18px; object-fit: cover; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 2px solid white; flex-shrink: 0; }
         .wallet-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
         .wallet-name { font-size: 18px; font-weight: bold; color: #1a1a1a; margin: 0; line-height: 1.2; }
@@ -52,6 +50,11 @@
         .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 8px; color: #666; font-size: 14px; font-weight: 500; transition: all 0.2s; }
         .tab.active { background: white; color: #007bff; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         
+        .checkbox-container { display: flex; align-items: flex-start; gap: 8px; text-align: left; margin: 10px 0; }
+        .checkbox-container input { width: auto; margin-top: 4px; }
+        .checkbox-container label { font-size: 12px; color: #666; cursor: pointer; line-height: 1.4; }
+        .checkbox-container label a { color: #007bff; text-decoration: underline; }
+
         #magicOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(10,10,10,0.92); backdrop-filter: blur(8px); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; display:none; }
         .star-anim { font-size: 120px; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; color: var(--stamp-color); }
         @keyframes pop { 0% { transform: scale(0) rotate(0deg); } 100% { transform: scale(1) rotate(360deg); } }
@@ -64,11 +67,13 @@
         #reader { width: 100%; max-width: 300px; border-radius: 16px; overflow: hidden; margin-top: 20px; }
         .hidden { display: none; }
         .form-label { display: block; text-align: left; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 500; }
+        .legal-footer { text-align: center; margin-top: 30px; font-size: 11px; color: #999; }
+        .legal-footer a { color: #007bff; text-decoration: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v9.3.1</span>
+        <span class="version-tag">v9.4.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -91,6 +96,12 @@
                 <input type="tel" id="regTel" placeholder="Ej: 5212345678">
                 <label class="form-label">Fecha de nacimiento</label>
                 <input type="date" id="regNac">
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="regConsent" required>
+                    <label for="regConsent">Acepto recibir promociones y compartir mis datos con el negocio según la <a href="privacidad.html" target="_blank">Política de Privacidad</a>.</label>
+                </div>
+                
                 <button class="btn-blue" onclick="registrar()">Registrarme</button>
             </div>
         </div>
@@ -103,6 +114,12 @@
             <input type="tel" id="cpTel" placeholder="Ej: 5212345678">
             <label class="form-label">Fecha de nacimiento</label>
             <input type="date" id="cpNac">
+            
+            <div class="checkbox-container">
+                <input type="checkbox" id="cpConsent" required>
+                <label for="cpConsent">Acepto recibir promociones y compartir mis datos con el negocio según la <a href="privacidad.html" target="_blank">Política de Privacidad</a>.</label>
+            </div>
+            
             <button onclick="vincularNegocio()">Vincular mi cuenta</button>
             <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:10px; background: transparent; color: #dc3545; font-weight: normal; font-size: 14px;">Cerrar Sesión y usar otra cuenta</button>
         </div>
@@ -111,6 +128,9 @@
             <div id="walletHeader"></div>
             <div id="tarjetasContainer"></div>
             <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px; background: transparent; color: #666; font-weight: normal; font-size: 14px;">Cerrar Sesión</button>
+            <div class="legal-footer">
+                Al usar esta app, aceptas nuestros <a href="terminos.html" target="_blank">Términos de Servicio</a> y <a href="privacidad.html" target="_blank">Política de Privacidad</a>.
+            </div>
         </div>
     </div>
 
@@ -234,10 +254,22 @@
             window.mostrarLogin = function() { document.getElementById('tabLogin').classList.add('active'); document.getElementById('tabRegistro').classList.remove('active'); document.getElementById('loginBox').classList.remove('hidden'); document.getElementById('registerBox').classList.add('hidden'); }
             window.mostrarRegistro = function() { document.getElementById('tabRegistro').classList.add('active'); document.getElementById('tabLogin').classList.remove('active'); document.getElementById('registerBox').classList.remove('hidden'); document.getElementById('loginBox').classList.add('hidden'); }
             window.login = async function() { try { await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPass').value); } catch(e) { alert(e.message); } }
-            window.registrar = async function() { const n=document.getElementById('regNombre').value, e=document.getElementById('regEmail').value, p=document.getElementById('regPass').value, t=document.getElementById('regTel').value, na=document.getElementById('regNac').value; if(!n||!e||!p||!t||!na) return alert("Completa todo."); try { const c = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "negocios", negocioId, "clientes", c.user.uid), { nombre:n, contacto:e, telefono:t, fechaNacimiento:na }); } catch(err) { alert(err.message); } }
-            window.vincularNegocio = async function() { const n=document.getElementById('cpNombre').value, t=document.getElementById('cpTel').value, na=document.getElementById('cpNac').value; if(!n||!t||!na) return alert("Completa todo."); await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre:n, contacto:auth.currentUser.email, telefono:t, fechaNacimiento:na }); clientName=n; document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(sessionStorage.getItem('doStamp_' + negocioId) === 'true') sumarSelloDirectoSinTarget(); }
             
-            // CORRECCIÓN AUDITORÍA: Limpieza de listeners para evitar fuga de memoria
+            window.registrar = async function() { 
+                const n=document.getElementById('regNombre').value, e=document.getElementById('regEmail').value, p=document.getElementById('regPass').value, t=document.getElementById('regTel').value, na=document.getElementById('regNac').value; 
+                if(!n||!e||!p||!t||!na) return alert("Completa todo."); 
+                if(!document.getElementById('regConsent').checked) return alert("Debes aceptar la política de privacidad para registrarte."); 
+                try { const c = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "negocios", negocioId, "clientes", c.user.uid), { nombre:n, contacto:e, telefono:t, fechaNacimiento:na, consentimiento:true }); } catch(err) { alert(err.message); } 
+            }
+            
+            window.vincularNegocio = async function() { 
+                const n=document.getElementById('cpNombre').value, t=document.getElementById('cpTel').value, na=document.getElementById('cpNac').value; 
+                if(!n||!t||!na) return alert("Completa todo."); 
+                if(!document.getElementById('cpConsent').checked) return alert("Debes aceptar la política de privacidad para vincular tu cuenta."); 
+                await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre:n, contacto:auth.currentUser.email, telefono:t, fechaNacimiento:na, consentimiento:true }); 
+                clientName=n; document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(sessionStorage.getItem('doStamp_' + negocioId) === 'true') sumarSelloDirectoSinTarget(); 
+            }
+            
             window.cerrarSesion = async function() { 
                 if(unsubPremios) { unsubPremios(); unsubPremios = null; }
                 if(unsubTarjetas) { unsubTarjetas(); unsubTarjetas = null; }
@@ -248,7 +280,6 @@
                 const premiosRef = collection(db, "negocios", negocioId, "premios");
                 const tarjetasRef = collection(db, "negocios", negocioId, "clientes", clienteId, "tarjetas");
                 
-                // 1. Asegurar que las tarjetas existan antes de escuchar
                 const premiosSnap = await getDocs(premiosRef);
                 const tarjetasSnap = await getDocs(tarjetasRef);
                 for(const d of premiosSnap.docs) {
@@ -259,11 +290,9 @@
                     }
                 }
 
-                // 2. Limpiar listeners previos para evitar fuga de memoria
                 if(unsubPremios) unsubPremios();
                 if(unsubTarjetas) unsubTarjetas();
 
-                // 3. Listeners en tiempo real
                 unsubPremios = onSnapshot(premiosRef, (snap) => {
                     premiosCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
                     renderTarjetas();
@@ -293,7 +322,6 @@
                     let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
                     let comp = sAct >= premio.sellosRequeridos;
                     
-                    // CORRECCIÓN AUDITORÍA: Prevenir sobreescribir un código ya generado
                     if (!exp && comp && !cod) { 
                         cod = Math.floor(1000+Math.random()*9000).toString(); 
                         updateDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId), { codigoRedencion: cod }); 
