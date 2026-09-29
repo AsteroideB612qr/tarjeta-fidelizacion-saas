@@ -7,7 +7,7 @@
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
         .auth-box { max-width: 400px; margin: 50px auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); position: relative; }
         h1, h2 { color: #1a1a1a; }
         h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-top: 30px; }
         .form-group { display: flex; gap: 10px; margin-bottom: 20px; }
@@ -18,6 +18,7 @@
         .btn-danger { background-color: #dc3545; padding: 6px 12px; font-size: 12px; }
         .btn-success { background-color: #28a745; padding: 6px 12px; font-size: 12px; }
         .btn-gray { background-color: #6c757d; }
+        .btn-landing { background-color: #25D366; padding: 10px 20px; font-size: 14px; text-decoration: none; display: inline-block; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border-bottom: 1px solid #eee; padding: 15px 10px; text-align: left; vertical-align: middle; }
         th { color: #666; font-size: 12px; text-transform: uppercase; }
@@ -26,6 +27,7 @@
         .status-expired { color: #dc3545; font-weight: bold; }
         .stamp-code { background: #f8f9fa; padding: 6px 10px; border-radius: 6px; font-family: monospace; font-weight: bold; color: #333; display: inline-block; margin-bottom: 5px; border: 1px solid #eee; }
         .hidden { display: none !important; }
+        .header-actions { position: absolute; top: 30px; right: 30px; display: flex; gap: 15px; align-items: center; }
     </style>
 </head>
 <body>
@@ -38,6 +40,10 @@
     </div>
 
     <div id="appView" class="container hidden">
+        <div class="header-actions">
+            <a href="landing.html" target="_blank" class="btn-landing">🚀 Ver Landing Page</a>
+            <button class="btn-danger" onclick="cerrarSesionAdmin()">Cerrar Sesión</button>
+        </div>
         <h1>🚀 Panel de Administración SaaS</h1>
         <p>Gestiona los negocios, suscripciones y códigos NFC.</p>
 
@@ -60,7 +66,6 @@
             </thead>
             <tbody id="tablaNegocios"><tr><td colspan="5">Cargando...</td></tr></tbody>
         </table>
-        <button class="btn-danger" onclick="cerrarSesionAdmin()" style="margin-top: 30px; width: auto; float: right;">Cerrar Sesión</button>
     </div>
 
     <div id="qrModal" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:100;">
@@ -89,8 +94,7 @@
         import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // Email del Súper Admin (Cámbialo por tu email real)
-        const ADMIN_EMAIL = "activosonlineqr@gmail.com"; 
+        const ADMIN_EMAIL = "admin@fidelidadpro.com"; 
 
         window.loginAdmin = async function() {
             const email = document.getElementById('adminEmail').value;
