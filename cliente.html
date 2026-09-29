@@ -18,27 +18,11 @@
         .container { max-width: 400px; margin: auto; padding: 25px 20px; position: relative; }
         .version-tag { position: absolute; top: 25px; right: 25px; background: #007bff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; z-index: 10; }
         
-        /* CORRECCIÓN: Estilos aplicados al ID correcto */
         #walletHeader { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 15px; 
-            margin-top: 20px; 
-            margin-bottom: 45px; /* ESPACIO ANTES DE LAS TARJETAS */
+            display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 20px; margin-bottom: 45px;
         }
-        .wallet-logo { 
-            width: 70px; height: 70px; border-radius: 18px; object-fit: cover; 
-            background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 2px solid white; 
-            flex-shrink: 0; 
-        }
-        .wallet-info { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: flex-start; 
-            gap: 4px; 
-            text-align: left; 
-        }
+        .wallet-logo { width: 70px; height: 70px; border-radius: 18px; object-fit: cover; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 2px solid white; flex-shrink: 0; }
+        .wallet-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
         .wallet-name { font-size: 18px; font-weight: bold; color: #1a1a1a; margin: 0; line-height: 1.2; }
         .welcome-msg { font-size: 13px; color: #666; font-weight: 500; }
         .socials-row { display: flex; gap: 10px; margin-top: 6px; justify-content: flex-start; }
@@ -84,7 +68,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v9.2.2</span>
+        <span class="version-tag">v9.3.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -146,7 +130,7 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { doc, getDoc, collection, getDocs, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { doc, getDoc, collection, getDocs, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -167,6 +151,8 @@
             let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
             let isExpired = true, clientName = "";
             let ndefReader = null, isStamping = false, stampCode = "FIDELIDAD_STAMP", html5QrCodeInstance = null;
+            let unsubPremios = null, unsubTarjetas = null;
+            let premiosCache = [], tarjetasCache = [];
 
             const icons = {
                 web: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
@@ -202,6 +188,7 @@
                     if (user) {
                         clienteId = user.uid;
                         document.getElementById('authForm').classList.add('hidden');
+                        document.getElementById('completarPerfilForm').classList.add('hidden');
                         const cSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
                         if (!cSnap.exists()) {
                             document.getElementById('negocioNombrePerfil').innerText = nombreNegocio;
@@ -211,11 +198,13 @@
                             clientName = cSnap.data().nombre;
                             document.getElementById('completarPerfilForm').classList.add('hidden');
                             document.getElementById('walleView').classList.remove('hidden');
-                            renderHeader(); await cargarTarjetas();
+                            renderHeader(); 
+                            await cargarTarjetas();
                             if (sessionStorage.getItem('doStamp_' + negocioId) === 'true' && !isExpired) { sessionStorage.removeItem('doStamp_' + negocioId); sumarSelloDirectoSinTarget(); }
                         }
                     } else {
                         document.getElementById('authForm').classList.remove('hidden');
+                        document.getElementById('completarPerfilForm').classList.add('hidden'); // Asegura ocultar el formulario
                         document.getElementById('walleView').classList.add('hidden');
                         mostrarLogin();
                     }
@@ -250,32 +239,65 @@
             window.cerrarSesion = async function() { await signOut(auth); }
 
             async function cargarTarjetas() {
-                const container = document.getElementById('tarjetasContainer'); container.innerHTML = '';
+                const premiosRef = collection(db, "negocios", negocioId, "premios");
+                const tarjetasRef = collection(db, "negocios", negocioId, "clientes", clienteId, "tarjetas");
+                
+                // 1. Ensure cards exist before listening
+                const premiosSnap = await getDocs(premiosRef);
+                const tarjetasSnap = await getDocs(tarjetasRef);
+                for(const d of premiosSnap.docs) {
+                    const p = d.data(); const pId = d.id;
+                    const exists = tarjetasSnap.docs.some(t => t.id === pId);
+                    if(!exists && (pId === premioIdURL || p.visibilidad === 'publico')) {
+                        await setDoc(doc(tarjetasRef, pId), { sellos: p.sellosIniciales || 0 });
+                    }
+                }
+
+                // 2. Real-time listeners
+                if(unsubPremios) unsubPremios();
+                if(unsubTarjetas) unsubTarjetas();
+
+                unsubPremios = onSnapshot(premiosRef, (snap) => {
+                    premiosCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    renderTarjetas();
+                });
+
+                unsubTarjetas = onSnapshot(tarjetasRef, (snap) => {
+                    tarjetasCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    renderTarjetas();
+                });
+            }
+
+            function renderTarjetas() {
+                const container = document.getElementById('tarjetasContainer');
+                container.innerHTML = '';
                 if(isExpired) { container.innerHTML = '<div class="auth-card"><h2>Promociones Pausadas</h2><p>El negocio está actualizando sus servicios. Vuelve pronto.</p></div>'; return; }
-                const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
-                if(premiosSnap.empty) { container.innerHTML = '<div class="auth-card"><p>El negocio aún no tiene premios.</p></div>'; return; }
+                if(premiosCache.length === 0) { container.innerHTML = '<div class="auth-card"><p>El negocio aún no tiene premios.</p></div>'; return; }
 
                 const hoy = new Date().toISOString().split('T')[0];
-                for(const docSnap of premiosSnap.docs) {
-                    const premio = docSnap.data(); const pId = docSnap.id;
-                    const tRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
-                    const tSnap = await getDoc(tRef); let tData = null;
-                    if(!tSnap.exists() && pId === premioIdURL) { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); } 
-                    else if (tSnap.exists()) tData = tSnap.data();
-                    else if (premio.visibilidad === 'publico') { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); }
-                    if (!tData) continue;
+                premiosCache.forEach(premio => {
+                    const pId = premio.id;
+                    const tData = tarjetasCache.find(t => t.id === pId);
+                    if(!tData) return;
 
-                    let sAct = tData.sellos || 0; let exp = (premio.vigenciaFin && hoy > premio.vigenciaFin); let cod = tData.codigoRedencion;
+                    let sAct = tData.sellos || 0; 
+                    let exp = (premio.vigenciaFin && hoy > premio.vigenciaFin); 
+                    let cod = tData.codigoRedencion;
                     let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
                     let comp = sAct >= premio.sellosRequeridos;
-                    if (!exp && comp && !cod) { cod = Math.floor(1000+Math.random()*9000).toString(); await updateDoc(tRef, { codigoRedencion: cod }, { merge: true }); }
+                    
+                    if (!exp && comp && !cod) { 
+                        cod = Math.floor(1000+Math.random()*9000).toString(); 
+                        updateDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId), { codigoRedencion: cod }); 
+                    }
+                    
                     let aH = '';
                     if (exp) aH = '<p style="color:#ff6b6b; font-weight:bold;">❌ Promoción expirada</p>';
                     else if (comp) aH = `<p style="font-weight:bold;">¡Felicidades! Canjea tu premio.</p><div class="codigo-box">CÓDIGO: ${cod || 'XXXX'}</div>`;
                     else aH = `<p style="font-size:14px; opacity:0.8;">Te faltan ${premio.sellosRequeridos - sAct} sellos</p><button class="btn-scan" onclick="iniciarValidacion('${pId}')">Escanear para sumar Sello</button>`;
                     const vB = premio.visibilidad === 'publico' ? '<span class="badge-pub">Público</span>' : '';
                     container.innerHTML += `<div class="card-premium"><div class="card-body"><h2>${premio.nombre} ${vB}</h2><div class="stamps">${hS}</div><div class="vigencia">Válido del ${premio.vigenciaInicio} al ${premio.vigenciaFin}</div>${aH}</div></div>`;
-                }
+                });
             }
 
             window.iniciarValidacion = function(pId) {
@@ -306,15 +328,22 @@
                     if(tS.exists()) { cS = tS.data().sellos || 0; if(tS.data().codigoRedencion) return alert("Esta tarjeta ya está lista para canjear."); } 
                     else if(premio.visibilidad === 'publico') { cS = premio.sellosIniciales || 0; } 
                     else { return alert("No tienes esta tarjeta activa."); }
-                    if(cS < premio.sellosRequeridos) { let data = { sellos: cS + 1 }; if(cS + 1 >= premio.sellosRequeridos) { data.codigoRedencion = Math.floor(1000 + Math.random() * 9000).toString(); } await setDoc(tR, data, { merge: true }); await cargarTarjetas(); } 
+                    if(cS < premio.sellosRequeridos) { let data = { sellos: cS + 1 }; if(cS + 1 >= premio.sellosRequeridos) { data.codigoRedencion = Math.floor(1000 + Math.random() * 9000).toString(); } await setDoc(tR, data, { merge: true }); } 
                     else { alert("Esta tarjeta ya está completa."); }
                 } catch(e) { alert("Error al sumar sello."); }
             }
 
             async function sumarSelloDirectoSinTarget() {
                 if(isExpired) return;
-                const pS = await getDocs(collection(db, "negocios", negocioId, "premios")); let aC = [];
-                for(const d of pS.docs) { const p=d.data(), pId=d.id; const tS=await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId)); let s=0, hR=false; if(tS.exists()) { s=tS.data().sellos||0; hR=!!tS.data().codigoRedencion; } else if(p.visibilidad==='publico') s=p.sellosIniciales||0; else continue; if(s<p.sellosRequeridos && !hR) aC.push({pId, n:p.nombre}); }
+                let aC = [];
+                premiosCache.forEach(p => { 
+                    const t = tarjetasCache.find(t => t.id === p.id); 
+                    let s=0, hR=false; 
+                    if(t) { s=t.sellos||0; hR=!!t.codigoRedencion; } 
+                    else if(p.visibilidad==='publico') s=p.sellosIniciales||0; 
+                    else return; 
+                    if(s<p.sellosRequeridos && !hR) aC.push({pId: p.id, n:p.nombre}); 
+                });
                 if(aC.length===0) { return; } let tId;
                 if(aC.length===1) tId=aC[0].pId; else { let o="¿A cuál sumar?\n"; aC.forEach((c,i)=>o+=`${i+1}. ${c.n}\n`); const s=prompt(o); const i=parseInt(s)-1; if(isNaN(i)||i<0||i>=aC.length){return;} tId=aC[i].pId; }
                 await sumarSelloDirecto(tId); mostrarAnimacionMagica();
