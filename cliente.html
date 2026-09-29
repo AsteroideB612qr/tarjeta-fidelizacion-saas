@@ -18,7 +18,8 @@
         .container { max-width: 400px; margin: auto; padding: 25px 20px; position: relative; }
         .version-tag { position: absolute; top: 25px; right: 25px; background: #007bff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; z-index: 10; }
         
-        .wallet-header { text-align: center; margin-bottom: 35px; }
+        /* ESPACIO EXTRA AQUÍ */
+        .wallet-header { text-align: center; margin-bottom: 50px; margin-top: 20px; }
         .wallet-logo { width: 90px; height: 90px; border-radius: 24px; object-fit: cover; background: white; box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; border: 2px solid white; }
         .wallet-name { font-size: 22px; font-weight: bold; color: #1a1a1a; margin: 0; }
         .welcome-msg { font-size: 15px; color: #666; margin-top: 6px; font-weight: 500; }
@@ -59,11 +60,12 @@
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         #reader { width: 100%; max-width: 300px; border-radius: 16px; overflow: hidden; margin-top: 20px; }
         .hidden { display: none; }
+        .form-label { display: block; text-align: left; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 500; }
     </style>
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v8.2.2</span>
+        <span class="version-tag">v9.0.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -76,20 +78,28 @@
                 <button onclick="login()">Iniciar Sesión</button>
             </div>
             <div id="registerBox" class="hidden">
+                <label class="form-label">Nombre completo</label>
                 <input type="text" id="regNombre" placeholder="Tu nombre">
+                <label class="form-label">Correo electrónico</label>
                 <input type="email" id="regEmail" placeholder="Tu Email">
+                <label class="form-label">Contraseña</label>
                 <input type="password" id="regPass" placeholder="Tu Contraseña">
-                <input type="tel" id="regTel" placeholder="Celular">
-                <input type="date" id="regNac" title="Fecha de nacimiento">
+                <label class="form-label">Celular</label>
+                <input type="tel" id="regTel" placeholder="Ej: 5212345678">
+                <label class="form-label">Fecha de nacimiento</label>
+                <input type="date" id="regNac">
                 <button class="btn-blue" onclick="registrar()">Registrarme</button>
             </div>
         </div>
 
         <div id="completarPerfilForm" class="auth-card hidden">
             <p>Tu cuenta existe, pero necesitas dejar tus datos para <strong id="negocioNombrePerfil"></strong>:</p>
+            <label class="form-label">Nombre completo</label>
             <input type="text" id="cpNombre" placeholder="Tu nombre">
-            <input type="tel" id="cpTel" placeholder="Celular">
-            <input type="date" id="cpNac" title="Fecha de nacimiento">
+            <label class="form-label">Celular</label>
+            <input type="tel" id="cpTel" placeholder="Ej: 5212345678">
+            <label class="form-label">Fecha de nacimiento</label>
+            <input type="date" id="cpNac">
             <button onclick="vincularNegocio()">Vincular mi cuenta</button>
         </div>
 
@@ -136,12 +146,10 @@
             const baseUrl = window.location.origin + window.location.pathname.replace('cliente.html', '');
             let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
             let isExpired = true, clientName = "";
-            let ndefReader = null;
-            let isStamping = false; 
-            let stampCode = "FIDELIDAD_STAMP";
-            let html5QrCodeInstance = null;
+            let ndefReader = null, isStamping = false, stampCode = "FIDELIDAD_STAMP", html5QrCodeInstance = null;
 
             const icons = {
+                web: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
                 ig: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E4405F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`,
                 tk: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#000000"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z"/></svg>`,
                 fb: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.45 2.89h-2.33v6.99A10 10 0 0 0 22 12z"/></svg>`,
@@ -156,33 +164,16 @@
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         nombreNegocio = data.nombre;
-                        if(data.diseno) {
-                            logoUrl = data.diseno.logo || "";
-                            colorFondo = data.diseno.colorFondo || "#1a1a1a";
-                            colorSello = data.diseno.colorSello || "#ffc107";
-                            document.documentElement.style.setProperty('--primary-color', colorFondo);
-                            document.documentElement.style.setProperty('--stamp-color', colorSello);
-                        }
+                        if(data.diseno) { logoUrl = data.diseno.logo || ""; colorFondo = data.diseno.colorFondo || "#1a1a1a"; colorSello = data.diseno.colorSello || "#ffc107"; document.documentElement.style.setProperty('--primary-color', colorFondo); document.documentElement.style.setProperty('--stamp-color', colorSello); }
                         if(data.redes) redes = data.redes;
                         if(data.fechaVencimiento) { isExpired = new Date(data.fechaVencimiento) < new Date(); }
                         if(data.stampCode) stampCode = data.stampCode;
                         
                         if(logoUrl) {
-                            const manifest = {
-                                name: nombreNegocio, short_name: (nombreNegocio || "Fidelidad").substring(0,12), 
-                                display: "standalone", background_color: "#ffffff", theme_color: colorFondo,
-                                start_url: `${baseUrl}cliente.html?id=${negocioId}`, scope: `${baseUrl}cliente.html`,
-                                icons: [{ src: logoUrl, sizes: "512x512", type: "image/png", purpose: "any" }]
-                            };
-                            const stringManifest = JSON.stringify(manifest);
-                            const blob = new Blob([stringManifest], {type: 'application/json'});
-                            const manifestURL = URL.createObjectURL(blob);
-                            let mLink = document.querySelector('link[rel="manifest"]');
-                            if (!mLink) { mLink = document.createElement('link'); mLink.rel = 'manifest'; document.head.appendChild(mLink); }
-                            mLink.href = manifestURL;
-                            let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
-                            if (!appleLink) { appleLink = document.createElement('link'); appleLink.rel = 'apple-touch-icon'; document.head.appendChild(appleLink); }
-                            appleLink.href = logoUrl;
+                            const manifest = { name: nombreNegocio, short_name: (nombreNegocio || "Fidelidad").substring(0,12), display: "standalone", background_color: "#ffffff", theme_color: colorFondo, start_url: `${baseUrl}cliente.html?id=${negocioId}`, scope: `${baseUrl}cliente.html`, icons: [{ src: logoUrl, sizes: "512x512", type: "image/png", purpose: "any" }] };
+                            const stringManifest = JSON.stringify(manifest); const blob = new Blob([stringManifest], {type: 'application/json'}); const manifestURL = URL.createObjectURL(blob);
+                            let mLink = document.querySelector('link[rel="manifest"]'); if (!mLink) { mLink = document.createElement('link'); mLink.rel = 'manifest'; document.head.appendChild(mLink); } mLink.href = manifestURL;
+                            let appleLink = document.querySelector('link[rel="apple-touch-icon"]'); if (!appleLink) { appleLink = document.createElement('link'); appleLink.rel = 'apple-touch-icon'; document.head.appendChild(appleLink); } appleLink.href = logoUrl;
                         }
                     }
                 } catch (e) { alert("Error al cargar negocio."); }
@@ -192,41 +183,27 @@
                         clienteId = user.uid;
                         document.getElementById('authForm').classList.add('hidden');
                         const cSnap = await getDoc(doc(db, "negocios", negocioId, "clientes", clienteId));
-                        if (!cSnap.exists()) {
-                            document.getElementById('negocioNombrePerfil').innerText = nombreNegocio;
-                            document.getElementById('completarPerfilForm').classList.remove('hidden');
-                        } else {
+                        if (!cSnap.exists()) { document.getElementById('negocioNombrePerfil').innerText = nombreNegocio; document.getElementById('completarPerfilForm').classList.remove('hidden'); } 
+                        else {
                             clientName = cSnap.data().nombre;
                             document.getElementById('completarPerfilForm').classList.add('hidden');
                             document.getElementById('walleView').classList.remove('hidden');
-                            renderHeader(); 
-                            await cargarTarjetas();
-                            if (sessionStorage.getItem('doStamp_' + negocioId) === 'true' && !isExpired) {
-                                sessionStorage.removeItem('doStamp_' + negocioId);
-                                sumarSelloDirecto(); 
-                            }
+                            renderHeader(); await cargarTarjetas();
+                            if (sessionStorage.getItem('doStamp_' + negocioId) === 'true' && !isExpired) { sessionStorage.removeItem('doStamp_' + negocioId); sumarSelloDirectoSinTarget(); }
                         }
-                    } else {
-                        document.getElementById('authForm').classList.remove('hidden');
-                        document.getElementById('walleView').classList.add('hidden');
-                        mostrarLogin();
-                    }
+                    } else { document.getElementById('authForm').classList.remove('hidden'); document.getElementById('walleView').classList.add('hidden'); mostrarLogin(); }
                 });
             };
 
             function renderHeader() {
                 let socialsHtml = '';
+                if(redes.web) socialsHtml += `<a href="${redes.web}" target="_blank">${icons.web}</a>`;
                 if(redes.ig) socialsHtml += `<a href="${redes.ig}" target="_blank">${icons.ig}</a>`;
                 if(redes.tk) socialsHtml += `<a href="${redes.tk}" target="_blank">${icons.tk}</a>`;
                 if(redes.fb) socialsHtml += `<a href="${redes.fb}" target="_blank">${icons.fb}</a>`;
                 if(redes.mail) socialsHtml += `<a href="mailto:${redes.mail}" target="_blank">${icons.mail}</a>`;
                 if(redes.wa) socialsHtml += `<a href="https://wa.me/${redes.wa.replace(/[^0-9]/g,'')}" target="_blank">${icons.wa}</a>`;
-                const headerHtml = `
-                    ${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}
-                    <h1 class="wallet-name">${nombreNegocio}</h1>
-                    ${clientName ? `<div class="welcome-msg">¡Bienvenido, ${clientName}!</div>` : ''}
-                    ${socialsHtml ? `<div class="socials-row">${socialsHtml}</div>` : ''}
-                `;
+                const headerHtml = `${logoUrl ? `<img src="${logoUrl}" class="wallet-logo" alt="Logo">` : `<div class="wallet-logo" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:#333; font-size:32px;">${nombreNegocio.charAt(0)}</div>`}<h1 class="wallet-name">${nombreNegocio}</h1>${clientName ? `<div class="welcome-msg">¡Bienvenido, ${clientName}!</div>` : ''}${socialsHtml ? `<div class="socials-row">${socialsHtml}</div>` : ''}`;
                 document.getElementById('walletHeader').innerHTML = headerHtml;
             }
 
@@ -234,12 +211,11 @@
             window.mostrarRegistro = function() { document.getElementById('tabRegistro').classList.add('active'); document.getElementById('tabLogin').classList.remove('active'); document.getElementById('registerBox').classList.remove('hidden'); document.getElementById('loginBox').classList.add('hidden'); }
             window.login = async function() { try { await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPass').value); } catch(e) { alert(e.message); } }
             window.registrar = async function() { const n=document.getElementById('regNombre').value, e=document.getElementById('regEmail').value, p=document.getElementById('regPass').value, t=document.getElementById('regTel').value, na=document.getElementById('regNac').value; if(!n||!e||!p||!t||!na) return alert("Completa todo."); try { const c = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "negocios", negocioId, "clientes", c.user.uid), { nombre:n, contacto:e, telefono:t, fechaNacimiento:na }); } catch(err) { alert(err.message); } }
-            window.vincularNegocio = async function() { const n=document.getElementById('cpNombre').value, t=document.getElementById('cpTel').value, na=document.getElementById('cpNac').value; if(!n||!t||!na) return alert("Completa todo."); await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre:n, contacto:auth.currentUser.email, telefono:t, fechaNacimiento:na }); clientName=n; document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(sessionStorage.getItem('doStamp_' + negocioId) === 'true') sumarSelloDirecto(); }
+            window.vincularNegocio = async function() { const n=document.getElementById('cpNombre').value, t=document.getElementById('cpTel').value, na=document.getElementById('cpNac').value; if(!n||!t||!na) return alert("Completa todo."); await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre:n, contacto:auth.currentUser.email, telefono:t, fechaNacimiento:na }); clientName=n; document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(sessionStorage.getItem('doStamp_' + negocioId) === 'true') sumarSelloDirectoSinTarget(); }
             window.cerrarSesion = async function() { await signOut(auth); }
 
             async function cargarTarjetas() {
-                const container = document.getElementById('tarjetasContainer');
-                container.innerHTML = '';
+                const container = document.getElementById('tarjetasContainer'); container.innerHTML = '';
                 if(isExpired) { container.innerHTML = '<div class="auth-card"><h2>Promociones Pausadas</h2><p>El negocio está actualizando sus servicios. Vuelve pronto.</p></div>'; return; }
                 const premiosSnap = await getDocs(collection(db, "negocios", negocioId, "premios"));
                 if(premiosSnap.empty) { container.innerHTML = '<div class="auth-card"><p>El negocio aún no tiene premios.</p></div>'; return; }
@@ -248,8 +224,7 @@
                 for(const docSnap of premiosSnap.docs) {
                     const premio = docSnap.data(); const pId = docSnap.id;
                     const tRef = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId);
-                    const tSnap = await getDoc(tRef);
-                    let tData = null;
+                    const tSnap = await getDoc(tRef); let tData = null;
                     if(!tSnap.exists() && pId === premioIdURL) { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); } 
                     else if (tSnap.exists()) tData = tSnap.data();
                     else if (premio.visibilidad === 'publico') { await setDoc(tRef, { sellos: premio.sellosIniciales || 0 }, { merge: true }); tData = (await getDoc(tRef)).data(); }
@@ -268,112 +243,39 @@
                 }
             }
 
-            // --- ESCÁNER UNIFICADO ---
             window.iniciarValidacion = function(pId) {
-                const targetCardId = pId; // Atar el ID localmente para evitar que se pierda
-                isStamping = false;
+                const targetCardId = pId; isStamping = false;
                 document.getElementById('scannerOverlay').style.display = 'flex';
-                
-                // 1. NFC
-                if ('NDEFReader' in window) {
-                    try {
-                        ndefReader = new NDEFReader();
-                        ndefReader.scan().then(() => {
-                            ndefReader.onreading = async (event) => {
-                                if(isStamping) return;
-                                const decoder = new TextDecoder();
-                                for (const record of event.message.records) {
-                                    if (record.recordType === "text") {
-                                        const text = decoder.decode(record.data);
-                                        if (text.includes(stampCode)) {
-                                            isStamping = true;
-                                            detenerEscaneo();
-                                            await sumarSelloDirecto(targetCardId);
-                                            mostrarAnimacionMagica();
-                                            setTimeout(() => { isStamping = false; }, 3000);
-                                        }
-                                    }
-                                }
-                            };
-                        }).catch(err => console.log("NFC no disponible."));
-                    } catch(e) { console.log("Error NFC:", e); }
-                }
-
-                // 2. Cámara QR
-                const readerElement = document.getElementById('reader');
-                readerElement.classList.remove('hidden');
+                if ('NDEFReader' in window) { try { ndefReader = new NDEFReader(); ndefReader.scan().then(() => { ndefReader.onreading = async (event) => { if(isStamping) return; const decoder = new TextDecoder(); for (const record of event.message.records) { if (record.recordType === "text") { const text = decoder.decode(record.data); if (text.includes(stampCode)) { isStamping = true; detenerEscaneo(); await sumarSelloDirecto(targetCardId); mostrarAnimacionMagica(); setTimeout(() => { isStamping = false; }, 3000); } } } }; }).catch(err => console.log("NFC no disponible.")); } catch(e) { console.log("Error NFC:", e); } }
+                const readerElement = document.getElementById('reader'); readerElement.classList.remove('hidden');
                 if (html5QrCodeInstance) { try { html5QrCodeInstance.stop(); } catch(e){} }
-                
                 html5QrCodeInstance = new Html5Qrcode("reader");
-                html5QrCodeInstance.start({facingMode:"environment"}, {fps: 10, qrbox: {width: 200, height: 200}},
-                    async (decodedText) => {
-                        if(isStamping) return;
-                        if(decodedText.includes(`id=${negocioId}&accion=sello`)) {
-                            isStamping = true;
-                            detenerEscaneo();
-                            await sumarSelloDirecto(targetCardId);
-                            mostrarAnimacionMagica();
-                            setTimeout(() => { isStamping = false; }, 3000);
-                        }
-                    }, (err) => {}
-                ).catch(err => console.log("Error Cámara:", err));
+                html5QrCodeInstance.start({facingMode:"environment"}, {fps: 10, qrbox: {width: 200, height: 200}}, async (decodedText) => { if(isStamping) return; if(decodedText.includes(`id=${negocioId}&accion=sello`)) { isStamping = true; detenerEscaneo(); await sumarSelloDirecto(targetCardId); mostrarAnimacionMagica(); setTimeout(() => { isStamping = false; }, 3000); } }, (err) => {}).catch(err => console.log("Error Cámara:", err));
             }
 
             window.detenerEscaneo = function() {
                 document.getElementById('scannerOverlay').style.display = 'none';
                 const readerElement = document.getElementById('reader');
-                if (html5QrCodeInstance) {
-                    html5QrCodeInstance.stop().then(() => {
-                        html5QrCodeInstance.clear();
-                        html5QrCodeInstance = null;
-                        readerElement.classList.add('hidden');
-                    }).catch(err => {
-                        console.error("Error al detener cámara:", err);
-                        readerElement.classList.add('hidden');
-                    });
-                } else {
-                    readerElement.classList.add('hidden');
-                }
+                if (html5QrCodeInstance) { html5QrCodeInstance.stop().then(() => { html5QrCodeInstance.clear(); html5QrCodeInstance = null; readerElement.classList.add('hidden'); }).catch(err => { readerElement.classList.add('hidden'); }); } 
+                else { readerElement.classList.add('hidden'); }
             }
 
-            // Sumar sello directo a tarjeta específica
             async function sumarSelloDirecto(pIdF) {
                 if(isExpired) return alert("Suscripción del negocio vencida.");
                 if(!pIdF) return alert("Error: No se seleccionó una tarjeta válida.");
-                
                 try {
-                    const pRef = doc(db, "negocios", negocioId, "premios", pIdF);
-                    const pSnap = await getDoc(pRef);
+                    const pRef = doc(db, "negocios", negocioId, "premios", pIdF); const pSnap = await getDoc(pRef);
                     if(!pSnap.exists()) return alert("Este premio ya no existe.");
-                    
-                    const premio = pSnap.data();
-                    const tR = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pIdF);
-                    const tS = await getDoc(tR);
-                    
+                    const premio = pSnap.data(); const tR = doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pIdF); const tS = await getDoc(tR);
                     let cS = 0;
-                    if(tS.exists()) {
-                        cS = tS.data().sellos || 0;
-                        if(tS.data().codigoRedencion) return alert("Esta tarjeta ya está lista para canjear.");
-                    } else if(premio.visibilidad === 'publico') {
-                        cS = premio.sellosIniciales || 0;
-                    } else {
-                        return alert("No tienes esta tarjeta activa.");
-                    }
-                    
-                    if(cS < premio.sellosRequeridos) {
-                        let data = { sellos: cS + 1 };
-                        if(cS + 1 >= premio.sellosRequeridos) {
-                            data.codigoRedencion = Math.floor(1000 + Math.random() * 9000).toString();
-                        }
-                        await setDoc(tR, data, { merge: true });
-                        await cargarTarjetas();
-                    } else {
-                        alert("Esta tarjeta ya está completa.");
-                    }
+                    if(tS.exists()) { cS = tS.data().sellos || 0; if(tS.data().codigoRedencion) return alert("Esta tarjeta ya está lista para canjear."); } 
+                    else if(premio.visibilidad === 'publico') { cS = premio.sellosIniciales || 0; } 
+                    else { return alert("No tienes esta tarjeta activa."); }
+                    if(cS < premio.sellosRequeridos) { let data = { sellos: cS + 1 }; if(cS + 1 >= premio.sellosRequeridos) { data.codigoRedencion = Math.floor(1000 + Math.random() * 9000).toString(); } await setDoc(tR, data, { merge: true }); await cargarTarjetas(); } 
+                    else { alert("Esta tarjeta ya está completa."); }
                 } catch(e) { alert("Error al sumar sello."); }
             }
 
-            // Este se usa solo si entra por el viejo link de NFC (redirección)
             async function sumarSelloDirectoSinTarget() {
                 if(isExpired) return;
                 const pS = await getDocs(collection(db, "negocios", negocioId, "premios")); let aC = [];
