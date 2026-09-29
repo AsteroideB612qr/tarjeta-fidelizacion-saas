@@ -45,7 +45,7 @@
             <input type="email" id="loginEmail" placeholder="Email" style="margin-bottom: 15px;">
             <input type="password" id="loginPass" placeholder="Contraseña" style="margin-bottom: 20px;">
             <button onclick="login()" style="width: 100%;">Iniciar Sesión</button>
-            <p style="font-size:12px; margin-top:20px; color:#666;">¿Primera vez? <a href="#" onclick="mostrarRegistro()" style="color:var(--primary);">Reclamar cuenta</a></p>
+            <p id="regLink" style="font-size:12px; margin-top:20px; color:#666;">¿Primera vez? <a href="#" onclick="mostrarRegistro()" style="color:var(--primary);">Reclamar cuenta</a></p>
         </div>
         <div id="registerFormBox" class="hidden">
             <p style="font-size:14px; margin-bottom:15px;">Reclama este panel:</p>
@@ -201,7 +201,16 @@
                         document.getElementById('authView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden');
                         cargarPremios(); cargarClientes();
                     }
-                } else { document.getElementById('authView').classList.remove('hidden'); document.getElementById('appView').classList.add('hidden'); const d = await getDoc(docRef); if (d.exists() && d.data().ownerUid) mostrarLogin(); else mostrarRegistro(); }
+                } else {
+                    document.getElementById('authView').classList.remove('hidden'); document.getElementById('appView').classList.add('hidden');
+                    const d = await getDoc(docRef);
+                    if (d.exists() && d.data().ownerUid) {
+                        mostrarLogin();
+                        document.getElementById('regLink').style.display = 'none'; // Ocultar opción de reclamar si ya tiene dueño
+                    } else {
+                        mostrarRegistro();
+                    }
+                }
             });
         };
 
