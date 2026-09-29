@@ -32,10 +32,12 @@
         .pos-card { background: white; padding: 20px; border: 1px solid #eee; border-radius: 12px; text-align: center; }
         .alert-sub { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffeeba; text-align: center; font-weight: bold; font-size: 14px; }
         .alert-danger-sub { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f5c6cb; text-align: center; font-weight: bold; font-size: 14px; }
+        .alert-legal { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; border: 1px solid #ffeeba; text-align: center; }
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:100; padding: 20px; }
         .modal-box { background:white; padding:25px; border-radius:16px; width:100%; max-width: 400px; text-align:left; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .wallet-item { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         .hidden { display: none !important; }
+        .version-tag { position: absolute; top: 20px; right: 20px; background: #007bff; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -57,7 +59,8 @@
     </div>
 
     <div id="appView" class="container hidden">
-        <div class="header-card">
+        <div class="header-card" style="position: relative;">
+            <span class="version-tag">v9.4.0</span>
             <div>
                 <h1 id="tituloNegocio">Cargando...</h1>
                 <div id="subAlert" style="margin-top:10px; margin-bottom:0;"></div>
@@ -139,6 +142,9 @@
         <div class="section-card">
             <h2>🛒 Gestión de Clientes (CRM)</h2>
             <button onclick="descargarCSV()" class="btn-gray" style="background-color:#17a2b8; margin-bottom:15px;">Descargar Base de Datos (CSV)</button>
+            <div class="alert-legal">
+                ⚠️ <strong>Aviso Legal:</strong> Solo envía mensajes a clientes que hayan aceptado recibir promociones al registrarse. El spam no autorizado puede resultar en el bloqueo de tu número de WhatsApp.
+            </div>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>Cliente</th><th>Tarjetas Activas</th><th>WhatsApp</th><th>Acción</th></tr></thead>
