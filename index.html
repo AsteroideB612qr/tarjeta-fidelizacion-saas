@@ -3,36 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Súper Admin - FidelidadPro</title>
+    <title>Súper Admin - FidelidadPro</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .auth-box { max-width: 400px; margin: 50px auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         h1, h2 { color: #1a1a1a; }
+        h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-top: 30px; }
         .form-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; color: white; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; width: 100%; box-sizing: border-box; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; background-color: #007bff; color: white; font-weight: bold; transition: background 0.2s; }
         button:hover { background-color: #0056b3; }
-        .btn-copy { background-color: #17a2b8; padding: 5px 10px; font-size: 12px; margin-left: 10px; }
-        .btn-danger { background-color: #dc3545; padding: 5px 10px; font-size: 12px; }
-        .btn-success { background-color: #28a745; padding: 5px 10px; font-size: 12px; }
-        .btn-gray { background-color: #6c757d; padding: 5px 10px; font-size: 12px; }
+        .btn-copy { background-color: #17a2b8; padding: 6px 12px; font-size: 12px; }
+        .btn-danger { background-color: #dc3545; padding: 6px 12px; font-size: 12px; }
+        .btn-success { background-color: #28a745; padding: 6px 12px; font-size: 12px; }
+        .btn-gray { background-color: #6c757d; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: middle; }
-        th { background-color: #f8f9fa; }
+        th, td { border-bottom: 1px solid #eee; padding: 15px 10px; text-align: left; vertical-align: middle; }
+        th { color: #666; font-size: 12px; text-transform: uppercase; }
         a { color: #007bff; text-decoration: none; word-break: break-all; }
         .status-active { color: #28a745; font-weight: bold; }
         .status-expired { color: #dc3545; font-weight: bold; }
-        .stamp-code { background: #f8f9fa; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #333; display: inline-block; margin-bottom: 5px; }
-        
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:100; }
-        .modal-box { background:white; padding:25px; border-radius:10px; width:400px; max-width: 90%; text-align:center; }
-        .qr-grid { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
-        .qr-item { background: #f9f9f9; padding: 15px; border-radius: 8px; }
+        .stamp-code { background: #f8f9fa; padding: 6px 10px; border-radius: 6px; font-family: monospace; font-weight: bold; color: #333; display: inline-block; margin-bottom: 5px; border: 1px solid #eee; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div id="authView" class="auth-box">
+        <h2>🔒 Súper Admin</h2>
+        <p>Acceso exclusivo del administrador del SaaS.</p>
+        <input type="email" id="adminEmail" placeholder="Email Admin" style="margin-bottom: 10px;">
+        <input type="password" id="adminPass" placeholder="Contraseña" style="margin-bottom: 15px;">
+        <button onclick="loginAdmin()" style="width: 100%;">Ingresar</button>
+    </div>
+
+    <div id="appView" class="container hidden">
         <h1>🚀 Panel de Administración SaaS</h1>
         <p>Gestiona los negocios, suscripciones y códigos NFC.</p>
 
@@ -53,148 +58,128 @@
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="tablaNegocios">
-                <tr><td colspan="5">Cargando...</td></tr>
-            </tbody>
+            <tbody id="tablaNegocios"><tr><td colspan="5">Cargando...</td></tr></tbody>
         </table>
+        <button class="btn-danger" onclick="cerrarSesionAdmin()" style="margin-top: 30px; width: auto; float: right;">Cerrar Sesión</button>
     </div>
 
-    <div id="qrModal" class="modal-overlay hidden">
-        <div class="modal-box">
+    <div id="qrModal" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:100;">
+        <div style="background:white; padding:25px; border-radius:12px; width:400px; max-width: 90%; text-align:center;">
             <h3>QRs y Links de: <span id="qrModalName"></span></h3>
-            <p style="font-size:12px; color:#666;">Usa estos links para personalizar las tarjetas físicas o tags NFC.</p>
-            
-            <div class="qr-grid">
-                <div class="qr-item">
-                    <p><strong>1. Billetera (Acceso)</strong></p>
+            <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                    <p><strong>1. Billetera</strong></p>
                     <img id="modalQrWallet" src="" style="width: 120px; height: 120px;">
-                    <div style="margin-top:10px;"><input type="text" id="modalWalletLink" readonly style="width:100%; font-size:10px; text-align:center;"></div>
+                    <input type="text" id="modalWalletLink" readonly style="width:100%; font-size:10px; text-align:center; margin-top:10px; border:1px solid #ddd; padding:5px;">
                     <button class="btn-copy" onclick="copiarModalLink('modalWalletLink')">Copiar Link</button>
                 </div>
-                <div class="qr-item">
-                    <p><strong>2. Sellador (QR/NFC)</strong></p>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                    <p><strong>2. Sellador</strong></p>
                     <img id="modalQrSello" src="" style="width: 120px; height: 120px;">
-                    <div style="margin-top:10px;"><input type="text" id="modalSelloLink" readonly style="width:100%; font-size:10px; text-align:center;"></div>
+                    <input type="text" id="modalSelloLink" readonly style="width:100%; font-size:10px; text-align:center; margin-top:10px; border:1px solid #ddd; padding:5px;">
                     <button class="btn-copy" onclick="copiarModalLink('modalSelloLink')">Copiar Link</button>
                 </div>
             </div>
-            
             <button class="btn-gray" onclick="closeQrModal()" style="margin-top: 25px; width: auto; padding: 8px 20px;">Cerrar</button>
         </div>
     </div>
 
     <script type="module">
-        import { db } from "./firebase.js";
+        import { db, auth } from "./firebase.js";
         import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // Email del Súper Admin (Cámbialo por tu email real)
+        const ADMIN_EMAIL = "admin@fidelidadpro.com"; 
+
+        window.loginAdmin = async function() {
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch(e) { alert("Error: " + e.message); }
+        }
+
+        window.cerrarSesionAdmin = async function() { await signOut(auth); }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                if (user.email === ADMIN_EMAIL) {
+                    document.getElementById('authView').classList.add('hidden');
+                    document.getElementById('appView').classList.remove('hidden');
+                    cargarNegocios();
+                } else {
+                    alert("No tienes permisos de Súper Admin.");
+                    await signOut(auth);
+                }
+            } else {
+                document.getElementById('authView').classList.remove('hidden');
+                document.getElementById('appView').classList.add('hidden');
+            }
+        });
 
         window.crearNegocio = async function() {
             const nombre = document.getElementById('nombreNegocio').value;
-            if(!nombre) return alert("Por favor ingresa un nombre");
+            if(!nombre) return alert("Ingresa un nombre");
             try {
                 const stampCode = "STAMP_" + Math.random().toString(36).substring(2, 8).toUpperCase();
                 await addDoc(collection(db, "negocios"), { nombre: nombre, creadoEn: new Date().getTime(), stampCode: stampCode });
                 document.getElementById('nombreNegocio').value = '';
                 cargarNegocios();
-            } catch (e) { alert("Error al crear: " + e.message); }
+            } catch (e) { alert("Error: " + e.message); }
         }
 
         window.eliminarNegocio = async function(id, nombre) {
-            if(confirm(`¿Seguro que quieres eliminar a ${nombre}?`)) {
-                try { await deleteDoc(doc(db, "negocios", id)); cargarNegocios(); } 
-                catch (e) { alert("Error al eliminar."); }
-            }
+            if(confirm(`¿Eliminar a ${nombre}?`)) { await deleteDoc(doc(db, "negocios", id)); cargarNegocios(); }
         }
 
-        window.copiarLinkPanel = function(link) {
-            navigator.clipboard.writeText(link).then(() => alert('¡Enlace copiado!')).catch(err => alert('Error: ' + err));
-        }
+        window.copiarLinkPanel = function(link) { navigator.clipboard.writeText(link).then(() => alert('¡Copiado!')); }
 
         window.extenderSuscripcion = async function(id, currentVencimiento) {
-            try {
-                const now = new Date();
-                let baseDate = now;
-                if(currentVencimiento && currentVencimiento > now.getTime()) baseDate = new Date(currentVencimiento);
-                baseDate.setDate(baseDate.getDate() + 30);
-                await updateDoc(doc(db, "negocios", id), { fechaVencimiento: baseDate.getTime() });
-                alert("¡Suscripción extendida por 30 días!");
-                cargarNegocios();
-            } catch(e) { alert("Error al extender."); }
+            const now = new Date(); let baseDate = now;
+            if(currentVencimiento && currentVencimiento > now.getTime()) baseDate = new Date(currentVencimiento);
+            baseDate.setDate(baseDate.getDate() + 30);
+            await updateDoc(doc(db, "negocios", id), { fechaVencimiento: baseDate.getTime() });
+            alert("¡Extendido +30 días!"); cargarNegocios();
         }
 
         window.editarStamp = async function(id, current) {
-            const newStamp = prompt("Código del Tag NFC (texto plano):", current);
-            if(newStamp !== null && newStamp.trim() !== "") {
-                await updateDoc(doc(db, "negocios", id), { stampCode: newStamp.trim() });
-                alert("Actualizado. Recuerda regrabar los NFC físicos con este texto.");
-                cargarNegocios();
-            }
+            const newStamp = prompt("Código NFC:", current);
+            if(newStamp !== null && newStamp.trim() !== "") { await updateDoc(doc(db, "negocios", id), { stampCode: newStamp.trim() }); alert("Actualizado."); cargarNegocios(); }
         }
 
         window.verQRs = function(id, nombre) {
             const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
             const walletUrl = `${baseUrl}cliente.html?id=${id}`;
             const selloUrl = `${baseUrl}cliente.html?id=${id}&accion=sello`;
-            
             document.getElementById('qrModalName').innerText = nombre;
             document.getElementById('modalQrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(walletUrl)}`;
             document.getElementById('modalWalletLink').value = walletUrl;
             document.getElementById('modalQrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(selloUrl)}`;
             document.getElementById('modalSelloLink').value = selloUrl;
-            
             document.getElementById('qrModal').classList.remove('hidden');
         }
 
-        window.copiarModalLink = function(inputId) {
-            const link = document.getElementById(inputId).value;
-            navigator.clipboard.writeText(link).then(() => alert('¡Link copiado!'));
-        }
-
-        window.closeQrModal = function() {
-            document.getElementById('qrModal').classList.add('hidden');
-        }
+        window.copiarModalLink = function(inputId) { navigator.clipboard.writeText(document.getElementById(inputId).value).then(() => alert('¡Copiado!')); }
+        window.closeQrModal = function() { document.getElementById('qrModal').classList.add('hidden'); }
 
         async function cargarNegocios() {
             const tbody = document.getElementById('tablaNegocios');
             tbody.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
-            try {
-                const querySnapshot = await getDocs(collection(db, "negocios"));
-                if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="5">Aún no hay negocios.</td></tr>'; return; }
-
-                const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
-                tbody.innerHTML = '';
-
-                querySnapshot.forEach((docSnap) => {
-                    const negocio = docSnap.data();
-                    const id = docSnap.id;
-                    const linkPanel = `${baseUrl}panel.html?id=${id}`;
-                    const sCode = negocio.stampCode || 'STAMP_DEFAULT';
-                    
-                    let estadoHtml = `<span class="status-expired">Vencido</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}', null)">Activar +30 días</button>`;
-                    if(negocio.fechaVencimiento) {
-                        const fecha = new Date(negocio.fechaVencimiento);
-                        if(fecha > new Date()) {
-                            estadoHtml = `<span class="status-active">Activo</span><br>Vence: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${negocio.fechaVencimiento})">Extender +30 días</button>`;
-                        } else {
-                            estadoHtml = `<span class="status-expired">Vencido</span><br>Venció: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${negocio.fechaVencimiento})">Reactivar +30 días</button>`;
-                        }
-                    }
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong>${negocio.nombre}</strong></td>
-                            <td><a href="${linkPanel}" target="_blank">${linkPanel}</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar Link</button></td>
-                            <td><span class="stamp-code">${sCode}</span><br><button class="btn-copy" onclick="editarStamp('${id}', '${sCode}')">Editar</button></td>
-                            <td>${estadoHtml}</td>
-                            <td>
-                                <button class="btn-copy" onclick="verQRs('${id}', '${negocio.nombre}')">Ver QRs y Links</button><br><br>
-                                <button class="btn-danger" onclick="eliminarNegocio('${id}', '${negocio.nombre}')">Eliminar</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="5">Error.</td></tr>'; }
+            const querySnapshot = await getDocs(collection(db, "negocios"));
+            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="5">Aún no hay negocios.</td></tr>'; return; }
+            const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+            tbody.innerHTML = '';
+            querySnapshot.forEach((docSnap) => {
+                const n = docSnap.data(), id = docSnap.id, linkPanel = `${baseUrl}panel.html?id=${id}`, sCode = n.stampCode || 'STAMP_DEFAULT';
+                let estadoHtml = `<span class="status-expired">Vencido</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}', null)">Activar +30d</button>`;
+                if(n.fechaVencimiento) {
+                    const fecha = new Date(n.fechaVencimiento);
+                    if(fecha > new Date()) estadoHtml = `<span class="status-active">Activo</span><br>Vence: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento})">Extender +30d</button>`;
+                    else estadoHtml = `<span class="status-expired">Vencido</span><br>Venció: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento})">Reactivar +30d</button>`;
+                }
+                tbody.innerHTML += `<tr><td><strong>${n.nombre}</strong></td><td><a href="${linkPanel}" target="_blank">Abrir Panel</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar</button></td><td><span class="stamp-code">${sCode}</span><br><button class="btn-copy" onclick="editarStamp('${id}', '${sCode}')">Editar</button></td><td>${estadoHtml}</td><td><button class="btn-copy" onclick="verQRs('${id}', '${n.nombre}')">Ver QRs</button><br><br><button class="btn-danger" onclick="eliminarNegocio('${id}', '${n.nombre}')">Eliminar</button></td></tr>`;
+            });
         }
-        cargarNegocios();
     </script>
 </body>
 </html>
