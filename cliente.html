@@ -18,11 +18,11 @@
         .container { max-width: 400px; margin: auto; padding: 25px 20px; position: relative; }
         .version-tag { position: absolute; top: 25px; right: 25px; background: #007bff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; z-index: 10; }
         
-        /* NUEVO HEADER CENTRADO COMO BLOQUE */
-        .wallet-header { 
+        /* CORRECCIÓN: Estilos aplicados al ID correcto */
+        #walletHeader { 
             display: flex; 
             align-items: center; 
-            justify-content: center; /* Centra el bloque completo */
+            justify-content: center; 
             gap: 15px; 
             margin-top: 20px; 
             margin-bottom: 45px; /* ESPACIO ANTES DE LAS TARJETAS */
@@ -30,13 +30,14 @@
         .wallet-logo { 
             width: 70px; height: 70px; border-radius: 18px; object-fit: cover; 
             background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 2px solid white; 
-            flex-shrink: 0; /* Evita que el logo se encoja */
+            flex-shrink: 0; 
         }
         .wallet-info { 
-            text-align: left; /* Alinea el texto a la izquierda del logo */
             display: flex; 
             flex-direction: column; 
+            align-items: flex-start; 
             gap: 4px; 
+            text-align: left; 
         }
         .wallet-name { font-size: 18px; font-weight: bold; color: #1a1a1a; margin: 0; line-height: 1.2; }
         .welcome-msg { font-size: 13px; color: #666; font-weight: 500; }
@@ -83,7 +84,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v9.2.1</span>
+        <span class="version-tag">v9.2.2</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
