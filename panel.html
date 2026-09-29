@@ -151,7 +151,12 @@
     <div id="walletModal" class="modal-overlay hidden">
         <div class="modal-box">
             <h2 style="border:none; padding:0; margin-bottom:15px;">Gestión de Billetera</h2>
-            <p>Cliente: <strong id="modalClientName"></strong></p>
+            <div id="modalClientData" style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:15px; font-size:13px; line-height:1.5;">
+                <p style="margin:0 0 5px;"><strong>Nombre:</strong> <span id="modalClientName"></span></p>
+                <p style="margin:0 0 5px;"><strong>Email:</strong> <span id="modalClientEmail" style="color:#666;"></span></p>
+                <p style="margin:0 0 5px;"><strong>Teléfono:</strong> <span id="modalClientPhone" style="color:#666;"></span></p>
+                <p style="margin:0;"><strong>Cumpleaños:</strong> <span id="modalClientBirth" style="color:#666;"></span></p>
+            </div>
             <h3 style="font-size:14px; margin-top:20px; margin-bottom:10px;">Premios Actuales</h3>
             <div id="modalCardsList"><p>Cargando...</p></div>
             <h3 style="font-size:14px; margin-top:20px; margin-bottom:10px;">Enviar Premio Privado</h3>
@@ -163,7 +168,7 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, writeBatch, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -173,6 +178,7 @@
         const docRef = doc(db, "negocios", negocioId);
         const baseUrl = window.location.origin + window.location.pathname.replace('panel.html', '');
         let clientesData = [], premiosMap = {}, currentModalClientId = null, isExpired = false;
+        let unsubPremios = null, unsubClientes = null, activeCardListeners = [];
 
         window.onload = async function() {
             try {
@@ -206,7 +212,7 @@
                     const d = await getDoc(docRef);
                     if (d.exists() && d.data().ownerUid) {
                         mostrarLogin();
-                        document.getElementById('regLink').style.display = 'none'; // Ocultar opción de reclamar si ya tiene dueño
+                        document.getElementById('regLink').style.display = 'none'; 
                     } else {
                         mostrarRegistro();
                     }
@@ -242,29 +248,75 @@
             if(isExpired) return alert("Suscripción vencida.");
             const p = { nombre: document.getElementById('premioNombre').value, sellosRequeridos: parseInt(document.getElementById('premioSellos').value), sellosIniciales: parseInt(document.getElementById('premioIniciales').value)||0, vigenciaInicio: document.getElementById('premioInicio').value, vigenciaFin: document.getElementById('premioFin').value, visibilidad: document.getElementById('premioVisibilidad').value };
             if(!p.nombre || !p.sellosRequeridos || !p.vigenciaInicio || !p.vigenciaFin) return alert("Completa campos.");
-            try { await addDoc(collection(db, "negocios", negocioId, "premios"), p); cargarPremios(); } catch(e) { alert("Error."); }
+            try { await addDoc(collection(db, "negocios", negocioId, "premios"), p); } catch(e) { alert("Error."); }
         }
 
-        window.eliminarPremio = async function(id) { if(confirm("¿Eliminar?")) { await deleteDoc(doc(db, "negocios", negocioId, "premios", id)); cargarPremios(); } }
-
-        async function cargarPremios() {
-            premiosMap = {}; const t = document.getElementById('tablaPremios'); t.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
-            const s = await getDocs(collection(db, "negocios", negocioId, "premios"));
-            if(s.empty) { t.innerHTML = '<tr><td colspan="5">No hay premios.</td></tr>'; return; }
-            t.innerHTML = ''; s.forEach(d => { premiosMap[d.id] = d.data(); const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${d.id}`; const v = d.data().visibilidad === 'privado' ? 'Privado' : 'Público'; t.innerHTML += `<tr><td><strong>${d.data().nombre}</strong></td><td>${v}</td><td>${d.data().vigenciaInicio} al ${d.data().vigenciaFin}</td><td><a href="${link}" target="_blank">Link</a></td><td><button class="btn-danger" onclick="eliminarPremio('${d.id}')">Elim</button></td></tr>`; });
+        window.eliminarPremio = async function(id) {
+            if(confirm("¿Eliminar este premio? Se quitará de TODAS las billeteras y registros.")) {
+                try {
+                    await deleteDoc(doc(db, "negocios", negocioId, "premios", id));
+                    const clientsSnap = await getDocs(collection(db, "negocios", negocioId, "clientes"));
+                    const batch = writeBatch(db);
+                    clientsSnap.forEach(c => { batch.delete(doc(db, "negocios", negocioId, "clientes", c.id, "tarjetas", id)); });
+                    await batch.commit();
+                    alert("Premio eliminado correctamente.");
+                } catch(e) { alert("Error al eliminar."); }
+            }
         }
 
-        async function cargarClientes() {
-            const t = document.getElementById('tablaClientes'); t.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>'; clientesData = [];
-            const s = await getDocs(collection(db, "negocios", negocioId, "clientes"));
-            if(s.empty) { t.innerHTML = '<tr><td colspan="4">Sin clientes.</td></tr>'; return; }
-            t.innerHTML = '';
-            for (const d of s.docs) {
-                const c = d.data(), id = d.id; clientesData.push(c);
-                const tS = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas"));
+        function cargarPremios() {
+            const q = collection(db, "negocios", negocioId, "premios");
+            if(unsubPremios) unsubPremios();
+            unsubPremios = onSnapshot(q, (snap) => {
+                premiosMap = {};
+                const t = document.getElementById('tablaPremios'); t.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
+                if(snap.empty) { t.innerHTML = '<tr><td colspan="5">No hay premios.</td></tr>'; return; }
+                t.innerHTML = '';
+                snap.forEach(d => { 
+                    premiosMap[d.id] = d.data(); 
+                    const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${d.id}`; 
+                    const v = d.data().visibilidad === 'privado' ? 'Privado' : 'Público'; 
+                    t.innerHTML += `<tr><td><strong>${d.data().nombre}</strong></td><td>${v}</td><td>${d.data().vigenciaInicio} al ${d.data().vigenciaFin}</td><td><a href="${link}" target="_blank">Link</a></td><td><button class="btn-danger" onclick="eliminarPremio('${d.id}')">Elim</button></td></tr>`; 
+                });
+            });
+        }
+
+        function clearCardListeners() { activeCardListeners.forEach(unsub => unsub()); activeCardListeners = []; }
+
+        function cargarClientes() {
+            const q = collection(db, "negocios", negocioId, "clientes");
+            if(unsubClientes) unsubClientes();
+            unsubClientes = onSnapshot(q, (snap) => {
+                clearCardListeners();
+                clientesData = [];
+                snap.forEach(d => clientesData.push({...d.data(), id: d.id, cards: []}));
+                renderClientesTable();
+                
+                clientesData.forEach(c => {
+                    const unsub = onSnapshot(collection(db, "negocios", negocioId, "clientes", c.id, "tarjetas"), (cardSnap) => {
+                        c.cards = cardSnap.docs.map(d => ({id: d.id, ...d.data()}));
+                        renderClientesTable();
+                        if(currentModalClientId === c.id) cargarModalCards(c.id);
+                    });
+                    activeCardListeners.push(unsub);
+                });
+            });
+        }
+
+        function renderClientesTable() {
+            const t = document.getElementById('tablaClientes'); t.innerHTML = '';
+            if(clientesData.length === 0) { t.innerHTML = '<tr><td colspan="4">Sin clientes.</td></tr>'; return; }
+            for (const c of clientesData) {
                 let h = '<span style="color:#999;">Ninguna</span>';
-                if (!tS.empty) { h = ''; for (const tD of tS.docs) { const t = tD.data(); const pN = premiosMap[tD.id]?.nombre || 'Elim'; const pT = premiosMap[tD.id]?.sellosRequeridos || '?'; h += `<div class="card-info"><span>${t.codigoRedencion ? '🏆' : '⭐'} ${pN}: ${t.codigoRedencion ? t.codigoRedencion : (t.sellos||0)+'/'+pT}</span>${!t.codigoRedencion && (t.sellos||0)<pT ? `<button class="btn-success" style="padding:2px 8px; font-size:10px;" onclick="sumarSelloManual('${id}','${tD.id}',${pT})">+1</button>` : ''}</div>`; } }
-                t.innerHTML += `<tr><td><strong>${c.nombre}</strong><br><small>${c.contacto}</small></td><td>${h}</td><td><input type="text" placeholder="Msg..." id="msg-${id}" style="margin-bottom:5px; padding:8px; font-size:12px;"><button class="btn-wa" style="width:100%; padding:8px;" onclick="enviarWhatsApp('${id}','${c.telefono}')">WA</button></td><td><button class="btn-gray" style="padding:5px 10px; font-size:12px; margin-bottom:5px; width:100%;" onclick="abrirModalBilletera('${id}','${c.nombre}')">Gestionar</button><button class="btn-danger" style="width:100%; padding:5px; font-size:12px;" onclick="eliminarCliente('${id}')">Elim</button></td></tr>`;
+                if (c.cards && c.cards.length > 0) { 
+                    h = ''; 
+                    for (const tD of c.cards) { 
+                        const pN = premiosMap[tD.id]?.nombre || 'Premio Eliminado'; 
+                        const pT = premiosMap[tD.id]?.sellosRequeridos || '?'; 
+                        h += `<div class="card-info"><span>${tD.codigoRedencion ? '🏆' : '⭐'} ${pN}: ${tD.codigoRedencion ? tD.codigoRedencion : (tD.sellos||0)+'/'+pT}</span>${!tD.codigoRedencion && (tD.sellos||0)<pT ? `<button class="btn-success" style="padding:2px 8px; font-size:10px;" onclick="sumarSelloManual('${c.id}','${tD.id}',${pT})">+1</button>` : ''}</div>`; 
+                    } 
+                }
+                t.innerHTML += `<tr><td><strong>${c.nombre}</strong><br><small>${c.contacto}</small></td><td>${h}</td><td><input type="text" placeholder="Msg..." id="msg-${c.id}" style="margin-bottom:5px; padding:8px; font-size:12px;"><button class="btn-wa" style="width:100%; padding:8px;" onclick="enviarWhatsApp('${c.id}','${c.telefono}')">WA</button></td><td><button class="btn-gray" style="padding:5px 10px; font-size:12px; margin-bottom:5px; width:100%;" onclick="abrirModalBilletera('${c.id}')">Gestionar</button><button class="btn-danger" style="width:100%; padding:5px; font-size:12px;" onclick="eliminarCliente('${c.id}')">Elim</button></td></tr>`;
             }
         }
 
@@ -272,28 +324,39 @@
             if(isExpired) return alert("Suscripción vencida.");
             const r = doc(db, "negocios", negocioId, "clientes", cid, "tarjetas", tid);
             const s = await getDoc(r);
-            if(s.exists()) { let cur = s.data().sellos||0; if(cur<max) { let dat={sellos:cur+1}; if(cur+1>=max) dat.codigoRedencion = Math.floor(1000+Math.random()*9000).toString(); await updateDoc(r, dat); cargarClientes(); if(currentModalClientId===cid) cargarModalCards(cid); } }
+            if(s.exists()) { let cur = s.data().sellos||0; if(cur<max) { let dat={sellos:cur+1}; if(cur+1>=max) dat.codigoRedencion = Math.floor(1000+Math.random()*9000).toString(); await updateDoc(r, dat); } }
         }
 
         window.enviarWhatsApp = function(id, tel) { if(!tel) return alert("Sin teléfono."); window.open(`https://wa.me/${tel.replace(/[^0-9]/g,'')}?text=${encodeURIComponent(document.getElementById('msg-'+id).value)}`, '_blank'); }
         window.validarRedencion = async function() {
             if(isExpired) return alert("Suscripción vencida.");
             const code = document.getElementById('inputRedencion').value.trim(); if(!code) return alert("Ingresa código.");
-            try { const s = await getDocs(collection(db, "negocios", negocioId, "clientes")); for (const d of s.docs) { const id=d.id; const tS = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas")); for (const tD of tS.docs) { if(tD.data().codigoRedencion === code) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id, "tarjetas", tD.id)); alert("Canjeado!"); cargarClientes(); return; } } } alert("No válido."); } catch(e) {}
+            try { const s = await getDocs(collection(db, "negocios", negocioId, "clientes")); for (const d of s.docs) { const id=d.id; const tS = await getDocs(collection(db, "negocios", negocioId, "clientes", id, "tarjetas")); for (const tD of tS.docs) { if(tD.data().codigoRedencion === code) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id, "tarjetas", tD.id)); alert("Canjeado!"); return; } } } alert("No válido."); } catch(e) {}
         }
-        window.eliminarCliente = async function(id) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id)); cargarClientes(); }
+        window.eliminarCliente = async function(id) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", id)); closeWalletModal(); }
         window.descargarCSV = function() { if(clientesData.length===0) return; let csv="Nombre,Email,Telefono,FechaNacimiento\n"; clientesData.forEach(c=>csv+=`${c.nombre},${c.contacto},${c.telefono||''},${c.fechaNacimiento||''}\n`); const b=new Blob([csv],{type:'text/csv'}); const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download='clientes.csv'; l.click(); }
 
-        window.abrirModalBilletera = async function(cid, name) {
-            currentModalClientId = cid; document.getElementById('modalClientName').innerText = name; const sel = document.getElementById('modalPremioSelect'); sel.innerHTML = ''; let c=0; for(let id in premiosMap) { if(premiosMap[id].visibilidad==='privado') { sel.innerHTML += `<option value="${id}">${premiosMap[id].nombre}</option>`; c++; } } if(c===0) sel.innerHTML='<option value="" disabled selected>Sin premios privados</option>'; await cargarModalCards(cid); document.getElementById('walletModal').classList.remove('hidden');
+        window.abrirModalBilletera = async function(cid) {
+            currentModalClientId = cid;
+            const client = clientesData.find(c => c.id === cid);
+            if(client) {
+                document.getElementById('modalClientName').innerText = client.nombre || 'N/A';
+                document.getElementById('modalClientEmail').innerText = client.contacto || 'N/A';
+                document.getElementById('modalClientPhone').innerText = client.telefono || 'N/A';
+                document.getElementById('modalClientBirth').innerText = client.fechaNacimiento || 'N/A';
+            }
+            const sel = document.getElementById('modalPremioSelect'); sel.innerHTML = ''; let c=0; for(let id in premiosMap) { if(premiosMap[id].visibilidad==='privado') { sel.innerHTML += `<option value="${id}">${premiosMap[id].nombre}</option>`; c++; } } if(c===0) sel.innerHTML='<option value="" disabled selected>Sin premios privados</option>';
+            await cargarModalCards(cid); document.getElementById('walletModal').classList.remove('hidden');
         }
         window.closeWalletModal = function() { document.getElementById('walletModal').classList.add('hidden'); currentModalClientId = null; }
         async function cargarModalCards(cid) {
-            const lD = document.getElementById('modalCardsList'); lD.innerHTML = '<p>Cargando...</p>'; const tS = await getDocs(collection(db, "negocios", negocioId, "clientes", cid, "tarjetas")); if(tS.empty) { lD.innerHTML = '<p>Sin tarjetas.</p>'; return; } lD.innerHTML = '';
-            for(const tD of tS.docs) { const t = tD.data(); const pN = premiosMap[tD.id]?.nombre || 'Elim'; const pT = premiosMap[tD.id]?.sellosRequeridos || '?'; let st = t.codigoRedencion ? `🏆 Cód: ${t.codigoRedencion}` : (t.sellos>=pT ? '🏆 Listo' : `⭐ ${t.sellos||0}/${pT}`); lD.innerHTML += `<div class="wallet-item"><span>${pN} - ${st}</span><button class="btn-danger" style="padding:2px 8px; font-size:10px; width:auto;" onclick="eliminarTarjetaCliente('${tD.id}')">Elim</button></div>`; }
+            const lD = document.getElementById('modalCardsList'); lD.innerHTML = '<p>Cargando...</p>'; 
+            const tS = await getDocs(collection(db, "negocios", negocioId, "clientes", cid, "tarjetas")); 
+            if(tS.empty) { lD.innerHTML = '<p>Sin tarjetas.</p>'; return; } lD.innerHTML = '';
+            for(const tD of tS.docs) { const t = tD.data(); const pN = premiosMap[tD.id]?.nombre || 'Premio Eliminado'; const pT = premiosMap[tD.id]?.sellosRequeridos || '?'; let st = t.codigoRedencion ? `🏆 Cód: ${t.codigoRedencion}` : (t.sellos>=pT ? '🏆 Listo' : `⭐ ${t.sellos||0}/${pT}`); lD.innerHTML += `<div class="wallet-item"><span>${pN} - ${st}</span><button class="btn-danger" style="padding:2px 8px; font-size:10px; width:auto;" onclick="eliminarTarjetaCliente('${tD.id}')">Elim</button></div>`; }
         }
-        window.eliminarTarjetaCliente = async function(tid) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", tid)); cargarModalCards(currentModalClientId); cargarClientes(); }
-        window.enviarPremioIndividual = async function() { const pId = document.getElementById('modalPremioSelect').value; if(!pId) return; await setDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", pId), { sellos: premiosMap[pId].sellosIniciales || 0 }, { merge: true }); alert("Enviado!"); cargarModalCards(currentModalClientId); cargarClientes(); }
+        window.eliminarTarjetaCliente = async function(tid) { await deleteDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", tid)); }
+        window.enviarPremioIndividual = async function() { const pId = document.getElementById('modalPremioSelect').value; if(!pId) return; await setDoc(doc(db, "negocios", negocioId, "clientes", currentModalClientId, "tarjetas", pId), { sellos: premiosMap[pId].sellosIniciales || 0 }, { merge: true }); alert("Enviado!"); }
     </script>
 </body>
 </html>
