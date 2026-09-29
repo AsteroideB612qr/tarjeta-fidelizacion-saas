@@ -39,15 +39,19 @@
         /* Pricing */
         .pricing { background-color: var(--light); padding: 60px 20px; text-align: center; }
         .pricing h2 { font-size: 2rem; margin-bottom: 40px; }
-        .price-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; }
-        .price-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); width: 350px; border: 2px solid transparent; transition: transform 0.2s; }
-        .price-card.featured { border-color: var(--primary); transform: scale(1.05); }
+        .price-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; align-items: stretch; }
+        .price-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); width: 350px; border: 2px solid transparent; transition: transform 0.2s; display: flex; flex-direction: column; }
+        .price-card.featured { border-color: var(--success); transform: scale(1.05); box-shadow: 0 10px 30px rgba(37, 211, 102, 0.2); position: relative; }
+        .price-card.featured::before { content: "AHORRAS S/ 10"; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .price-card h3 { font-size: 1.5rem; margin-bottom: 10px; }
         .price-card .price { font-size: 2.5rem; font-weight: bold; color: var(--dark); margin: 15px 0; }
         .price-card .price span { font-size: 1rem; font-weight: normal; color: #777; }
-        .price-card ul { list-style: none; margin-bottom: 30px; text-align: left; }
-        .price-card ul li { margin-bottom: 10px; padding-left: 20px; position: relative; }
+        .price-card ul { list-style: none; margin-bottom: 30px; text-align: left; flex-grow: 1; }
+        .price-card ul li { margin-bottom: 10px; padding-left: 20px; position: relative; font-size: 0.95rem; }
         .price-card ul li::before { content: "✔"; color: var(--success); position: absolute; left: 0; font-weight: bold; }
+        .extra-card { background: transparent; border: 2px dashed #ccc; padding: 20px; border-radius: 12px; width: 350px; margin-top: 30px; text-align: center; }
+        .extra-card h4 { color: var(--dark); margin-bottom: 10px; }
+        .extra-card p { font-size: 0.9rem; color: #666; margin-bottom: 15px; }
         
         /* Footer */
         footer { background-color: var(--dark); color: white; text-align: center; padding: 40px 20px; }
@@ -128,22 +132,27 @@
     </div>
 
     <div class="pricing">
-        <h2>Planes para emprendedores</h2>
+        <h2>Elige cómo empezar</h2>
         <div class="price-cards">
-            <div class="price-card">
+            <!-- KIT DE INICIO (DESTACADO) -->
+            <div class="price-card featured">
                 <h3>Kit de Inicio 🚀</h3>
                 <div class="price">S/ 45 <span>/ único pago</span></div>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Incluye 1 mes completo de plataforma + 1 Tarjeta NFC física con tu logo.</p>
                 <ul>
                     <li>1 Tag NFC personalizado con tu logo</li>
-                    <li>Código QR de mostrador</li>
-                    <li>1 Mes de uso completo de la plataforma</li>
+                    <li>Código QR de mostrador digital</li>
+                    <li>1 Mes de uso completo (CRM + WhatsApp)</li>
                     <li>Configuración inicial por nuestro equipo</li>
                 </ul>
-                <a href="https://wa.me/51984908819?text=Hola,%20quiero%20el%20Kit%20de%20Inicio%20de%20FidelidadPro" class="btn-cta" target="_blank">Empezar Ahora</a>
+                <a href="https://wa.me/51984908819?text=Hola,%20quiero%20el%20Kit%20de%20Inicio%20de%20FidelidadPro%20por%20S/45" class="btn-cta" target="_blank">Empezar Ahorrando</a>
             </div>
-            <div class="price-card featured">
-                <h3>Mensualidad Pro ⭐</h3>
+
+            <!-- PLAN DIGITAL -->
+            <div class="price-card">
+                <h3>Plan Digital 💻</h3>
                 <div class="price">S/ 35 <span>/ por mes</span></div>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Solo el software, sin tarjeta física. Ideal si ya tienes un QR impreso.</p>
                 <ul>
                     <li>Tarjetas digitales ilimitadas</li>
                     <li>Captura de datos de clientes (CRM)</li>
@@ -151,8 +160,15 @@
                     <li>Premios públicos y privados con vigencia</li>
                     <li>Soporte técnico prioritario</li>
                 </ul>
-                <a href="https://wa.me/51984908819?text=Hola,%20quiero%20la%20suscripción%20mensual%20de%20FidelidadPro" class="btn-cta" target="_blank">Contratar Plan</a>
+                <a href="https://wa.me/51984908819?text=Hola,%20quiero%20el%20Plan%20Digital%20Mensual%20de%20FidelidadPro" class="btn-cta" target="_blank">Contratar Plan</a>
             </div>
+        </div>
+
+        <!-- TARJETA ADICIONAL -->
+        <div class="extra-card">
+            <h4>¿Tienes otra caja registradora? 🏪</h4>
+            <p>Compra una Tarjeta NFC adicional personalizada con tu logo por solo <strong>S/ 20 (Pago único)</strong>.</p>
+            <a href="https://wa.me/51984908819?text=Hola,%20quiero%20una%20Tarjeta%20NFC%20adicional" class="btn-cta" target="_blank" style="font-size: 1rem; padding: 10px 20px;">Solicitar NFC Extra</a>
         </div>
     </div>
 
