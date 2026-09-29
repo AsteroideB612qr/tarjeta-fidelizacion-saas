@@ -68,7 +68,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v9.3.0</span>
+        <span class="version-tag">v9.3.1</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -204,7 +204,7 @@
                         }
                     } else {
                         document.getElementById('authForm').classList.remove('hidden');
-                        document.getElementById('completarPerfilForm').classList.add('hidden'); // Asegura ocultar el formulario
+                        document.getElementById('completarPerfilForm').classList.add('hidden'); 
                         document.getElementById('walleView').classList.add('hidden');
                         mostrarLogin();
                     }
@@ -236,13 +236,19 @@
             window.login = async function() { try { await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPass').value); } catch(e) { alert(e.message); } }
             window.registrar = async function() { const n=document.getElementById('regNombre').value, e=document.getElementById('regEmail').value, p=document.getElementById('regPass').value, t=document.getElementById('regTel').value, na=document.getElementById('regNac').value; if(!n||!e||!p||!t||!na) return alert("Completa todo."); try { const c = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "negocios", negocioId, "clientes", c.user.uid), { nombre:n, contacto:e, telefono:t, fechaNacimiento:na }); } catch(err) { alert(err.message); } }
             window.vincularNegocio = async function() { const n=document.getElementById('cpNombre').value, t=document.getElementById('cpTel').value, na=document.getElementById('cpNac').value; if(!n||!t||!na) return alert("Completa todo."); await setDoc(doc(db, "negocios", negocioId, "clientes", clienteId), { nombre:n, contacto:auth.currentUser.email, telefono:t, fechaNacimiento:na }); clientName=n; document.getElementById('completarPerfilForm').classList.add('hidden'); document.getElementById('walleView').classList.remove('hidden'); renderHeader(); await cargarTarjetas(); if(sessionStorage.getItem('doStamp_' + negocioId) === 'true') sumarSelloDirectoSinTarget(); }
-            window.cerrarSesion = async function() { await signOut(auth); }
+            
+            // CORRECCIÓN AUDITORÍA: Limpieza de listeners para evitar fuga de memoria
+            window.cerrarSesion = async function() { 
+                if(unsubPremios) { unsubPremios(); unsubPremios = null; }
+                if(unsubTarjetas) { unsubTarjetas(); unsubTarjetas = null; }
+                await signOut(auth); 
+            }
 
             async function cargarTarjetas() {
                 const premiosRef = collection(db, "negocios", negocioId, "premios");
                 const tarjetasRef = collection(db, "negocios", negocioId, "clientes", clienteId, "tarjetas");
                 
-                // 1. Ensure cards exist before listening
+                // 1. Asegurar que las tarjetas existan antes de escuchar
                 const premiosSnap = await getDocs(premiosRef);
                 const tarjetasSnap = await getDocs(tarjetasRef);
                 for(const d of premiosSnap.docs) {
@@ -253,10 +259,11 @@
                     }
                 }
 
-                // 2. Real-time listeners
+                // 2. Limpiar listeners previos para evitar fuga de memoria
                 if(unsubPremios) unsubPremios();
                 if(unsubTarjetas) unsubTarjetas();
 
+                // 3. Listeners en tiempo real
                 unsubPremios = onSnapshot(premiosRef, (snap) => {
                     premiosCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
                     renderTarjetas();
@@ -286,6 +293,7 @@
                     let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
                     let comp = sAct >= premio.sellosRequeridos;
                     
+                    // CORRECCIÓN AUDITORÍA: Prevenir sobreescribir un código ya generado
                     if (!exp && comp && !cod) { 
                         cod = Math.floor(1000+Math.random()*9000).toString(); 
                         updateDoc(doc(db, "negocios", negocioId, "clientes", clienteId, "tarjetas", pId), { codigoRedencion: cod }); 
