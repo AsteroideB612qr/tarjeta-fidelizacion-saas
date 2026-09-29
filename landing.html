@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FidelidadPro - Tarjetas de Fidelización Digital</title>
+    <style>
+        :root { --primary: #007bff; --dark: #1a1a1a; --stamp: #ffc107; --light: #f8f9fa; --success: #25D366; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }
+        body { background-color: #ffffff; color: var(--dark); line-height: 1.6; }
+        
+        /* Hero Section */
+        .hero { background: linear-gradient(135deg, #1a1a1a 0%, #007bff 100%); color: white; padding: 80px 20px; text-align: center; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 20px; line-height: 1.2; }
+        .hero p { font-size: 1.2rem; opacity: 0.9; max-width: 600px; margin: 0 auto 30px auto; }
+        .btn-cta { display: inline-block; background-color: var(--success); color: white; padding: 15px 30px; font-size: 1.2rem; font-weight: bold; text-decoration: none; border-radius: 50px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .btn-cta:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        
+        /* Pain Points */
+        .pain { padding: 60px 20px; text-align: center; background-color: var(--light); }
+        .pain h2 { font-size: 2rem; margin-bottom: 30px; color: var(--dark); }
+        .pain-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1000px; margin: 0 auto; }
+        .pain-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 300px; }
+        .pain-card .icon { font-size: 2.5rem; margin-bottom: 15px; display: block; }
+        .pain-card h3 { margin-bottom: 10px; color: var(--primary); }
+        
+        /* Solution / Features */
+        .solution { padding: 60px 20px; max-width: 1000px; margin: 0 auto; }
+        .solution h2 { text-align: center; font-size: 2rem; margin-bottom: 40px; }
+        .features { display: flex; flex-wrap: wrap; gap: 40px; align-items: center; }
+        .mockup { flex: 1; min-width: 300px; text-align: center; }
+        .mockup img { max-width: 100%; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        .feature-list { flex: 1; min-width: 300px; }
+        .feature-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; }
+        .feature-item .check { color: var(--success); font-size: 1.5rem; font-weight: bold; }
+        .feature-item h4 { font-size: 1.1rem; margin-bottom: 5px; }
+        .feature-item p { font-size: 0.95rem; color: #666; }
+        
+        /* Pricing */
+        .pricing { background-color: var(--light); padding: 60px 20px; text-align: center; }
+        .pricing h2 { font-size: 2rem; margin-bottom: 40px; }
+        .price-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; }
+        .price-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); width: 350px; border: 2px solid transparent; transition: transform 0.2s; }
+        .price-card.featured { border-color: var(--primary); transform: scale(1.05); }
+        .price-card h3 { font-size: 1.5rem; margin-bottom: 10px; }
+        .price-card .price { font-size: 2.5rem; font-weight: bold; color: var(--dark); margin: 15px 0; }
+        .price-card .price span { font-size: 1rem; font-weight: normal; color: #777; }
+        .price-card ul { list-style: none; margin-bottom: 30px; text-align: left; }
+        .price-card ul li { margin-bottom: 10px; padding-left: 20px; position: relative; }
+        .price-card ul li::before { content: "✔"; color: var(--success); position: absolute; left: 0; font-weight: bold; }
+        
+        /* Footer */
+        footer { background-color: var(--dark); color: white; text-align: center; padding: 40px 20px; }
+        footer a { color: var(--stamp); text-decoration: none; }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.8rem; }
+            .price-card.featured { transform: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hero">
+        <h1>Convierte clientes ocasionales en clientes recurrentes</h1>
+        <p>Adiós a las tarjetas de cartón que se pierden. FidelidadPro pone la tarjeta de tu negocio en el celular de tu cliente y te da su WhatsApp para enviarle promociones los días lentos.</p>
+        <a href="https://wa.me/51984908819?text=Hola,%20quiero%20información%20sobre%20FidelidadPro%20para%20mi%20negocio" class="btn-cta" target="_blank">💬 Quiero más información</a>
+    </div>
+
+    <div class="pain">
+        <h2>¿Te ha pasado esto?</h2>
+        <div class="pain-cards">
+            <div class="pain-card">
+                <span class="icon">🗑️</span>
+                <h3>Tarjetas perdidas</h3>
+                <p>El cliente se lava los pantalones y tira la tarjeta de cartón a la basura. Todo su avance se pierde y no vuelve.</p>
+            </div>
+            <div class="pain-card">
+                <span class="icon">📊</span>
+                <h3>No sabes quién es tu cliente</h3>
+                <p>Atiendes a 100 personas al día, pero no tienes su nombre, ni su celular, ni su cumpleaños para poder enviarles promociones.</p>
+            </div>
+            <div class="pain-card">
+                <span class="icon">📉</span>
+                <h3>Días sin ventas</h3>
+                <p>Los martes y miércoles son lentos. Te encantaría mandar un mensaje a tus clientes para que vuelvan, pero no tienes cómo contactarlos.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="solution">
+        <h2>La Solución: FidelidadPro</h2>
+        <div class="features">
+            <div class="mockup">
+                <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="App en celular">
+            </div>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <span class="check">✔</span>
+                    <div>
+                        <h4>Tarjeta 100% Digital</h4>
+                        <p>El cliente escanea un QR o toca un NFC en tu mostrador y su tarjeta aparece mágicamente en su celular.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="check">✔</span>
+                    <div>
+                        <h4>Base de Datos Automática (CRM)</h4>
+                        <p>Cuando el cliente se registra para obtener su primer sello, te deja su nombre, celular y cumpleaños.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="check">✔</span>
+                    <div>
+                        <h4>Marketing por WhatsApp en 1 clic</h4>
+                        <p>Desde tu panel, escribes un mensaje de promoción y se lo envías directo al WhatsApp del cliente sin salir de la app.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="check">✔</span>
+                    <div>
+                        <h4>Premios con Vigencia (FOMO)</h4>
+                        <p>Crea premios que expiran ("2x1 solo este viernes"). El cliente verá la cuenta regresiva y vendrá corriendo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pricing">
+        <h2>Planes para emprendedores</h2>
+        <div class="price-cards">
+            <div class="price-card">
+                <h3>Kit de Inicio 🚀</h3>
+                <div class="price">S/ 45 <span>/ único pago</span></div>
+                <ul>
+                    <li>1 Tag NFC personalizado con tu logo</li>
+                    <li>Código QR de mostrador</li>
+                    <li>1 Mes de uso completo de la plataforma</li>
+                    <li>Configuración inicial por nuestro equipo</li>
+                </ul>
+                <a href="https://wa.me/51984908819?text=Hola,%20quiero%20el%20Kit%20de%20Inicio%20de%20FidelidadPro" class="btn-cta" target="_blank">Empezar Ahora</a>
+            </div>
+            <div class="price-card featured">
+                <h3>Mensualidad Pro ⭐</h3>
+                <div class="price">S/ 35 <span>/ por mes</span></div>
+                <ul>
+                    <li>Tarjetas digitales ilimitadas</li>
+                    <li>Captura de datos de clientes (CRM)</li>
+                    <li>Envío de promociones por WhatsApp</li>
+                    <li>Premios públicos y privados con vigencia</li>
+                    <li>Soporte técnico prioritario</li>
+                </ul>
+                <a href="https://wa.me/51984908819?text=Hola,%20quiero%20la%20suscripción%20mensual%20de%20FidelidadPro" class="btn-cta" target="_blank">Contratar Plan</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 FidelidadPro. Hecho para emprendedores peruanos.</p>
+        <p style="margin-top:10px; font-size:0.8rem;">Al contactarnos aceptas nuestros <a href="terminos.html">Términos</a> y <a href="privacidad.html">Política de Privacidad</a>.</p>
+    </footer>
+
+</body>
+</html>
