@@ -19,6 +19,7 @@
         .btn-success { background-color: #28a745; padding: 6px 12px; font-size: 12px; }
         .btn-gray { background-color: #6c757d; }
         .btn-landing { background-color: #25D366; padding: 10px 20px; font-size: 14px; text-decoration: none; display: inline-block; }
+        .btn-tutorial { background-color: #6c757d; padding: 10px 20px; font-size: 14px; text-decoration: none; display: inline-block; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border-bottom: 1px solid #eee; padding: 15px 10px; text-align: left; vertical-align: middle; }
         th { color: #666; font-size: 12px; text-transform: uppercase; }
@@ -27,7 +28,7 @@
         .status-expired { color: #dc3545; font-weight: bold; }
         .stamp-code { background: #f8f9fa; padding: 6px 10px; border-radius: 6px; font-family: monospace; font-weight: bold; color: #333; display: inline-block; margin-bottom: 5px; border: 1px solid #eee; }
         .hidden { display: none !important; }
-        .header-actions { position: absolute; top: 30px; right: 30px; display: flex; gap: 15px; align-items: center; }
+        .header-actions { position: absolute; top: 30px; right: 30px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
     </style>
 </head>
 <body>
@@ -41,6 +42,7 @@
 
     <div id="appView" class="container hidden">
         <div class="header-actions">
+            <a href="tutorial.html" target="_blank" class="btn-tutorial">📘 Tutorial</a>
             <a href="landing.html" target="_blank" class="btn-landing">🚀 Ver Landing Page</a>
             <button class="btn-danger" onclick="cerrarSesionAdmin()">Cerrar Sesión</button>
         </div>
@@ -94,7 +96,7 @@
         import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        const ADMIN_EMAIL = "activosonlineqr@gmail.com"; 
+        const ADMIN_EMAIL = "admin@fidelidadpro.com"; 
 
         window.loginAdmin = async function() {
             const email = document.getElementById('adminEmail').value;
