@@ -9,7 +9,7 @@
         body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; color: #333; }
         .auth-box { max-width: 400px; margin: 50px auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center; }
         .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
-        .header-card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .header-card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header-card h1 { margin: 0; font-size: 24px; color: var(--dark); }
         .section-card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h2 { color: var(--dark); font-size: 18px; margin-top: 0; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; }
@@ -65,7 +65,10 @@
                 <h1 id="tituloNegocio">Cargando...</h1>
                 <div id="subAlert" style="margin-top:10px; margin-bottom:0;"></div>
             </div>
-            <button class="btn-gray" onclick="cerrarSesion()" style="height: fit-content;">Cerrar Sesión</button>
+            <div style="display:flex; gap: 10px; flex-wrap: wrap;">
+                <a href="tutorial.html" target="_blank" class="btn-gray" style="text-decoration:none; display:inline-block; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14px;">📘 Tutorial</a>
+                <button class="btn-gray" onclick="cerrarSesion()">Cerrar Sesión</button>
+            </div>
         </div>
 
         <div class="section-card">
