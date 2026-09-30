@@ -19,9 +19,7 @@
         .step p { font-size: 0.95rem; color: #555; margin-bottom: 10px; }
         .tip { background: #e7f3ff; border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; margin-top: 15px; font-size: 0.9rem; }
         .tip strong { color: var(--primary); }
-        .btn-back { display: inline-block; background: var(--dark); color: white; padding: 12px 25px; text-decoration: none; border-radius: 30px; font-weight: bold; margin-top: 20px; }
         .wallet-instruction { background: #f0f4f8; padding: 20px; border-radius: 10px; margin-top: 10px; text-align: center; }
-        .wallet-instruction img { max-width: 100px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -39,8 +37,8 @@
                 <p>La primera vez que entres a tu link de Panel, verás la opción "Reclamar cuenta". Ingresa tu correo y crea una contraseña. A partir de ahí, solo usarás "Iniciar Sesión".</p>
             </div>
             <div class="step">
-                <h3>Configurar PIN de Cajero</h3>
-                <p>En la sección "Seguridad del Sistema", pon un PIN de 4 dígitos. Este PIN se usará únicamente si falla el escaneo del QR o NFC en el mostrador y necesitas sumar un sello manualmente.</p>
+                <h3>Seguridad de Sellado (Sin PIN)</h3>
+                <p>Olvida los PINs que los clientes pueden compartir o adivinar. Para que un cliente sume un sello, <strong>debe abrir su billetera en la app y presionar el botón "Escanear para sumar Sello"</strong>. Solo entonces podrá escanear el QR "Sellador" de tu mostrador o acercar su celular al Tag NFC. Esto garantiza que la validación se haga dentro de la app y el cliente esté físicamente en tu local, evitando fraudes.</p>
             </div>
         </div>
 
@@ -81,7 +79,7 @@
             </div>
             <div class="step">
                 <h3>QR o NFC Sellador (Sumar Sello)</h3>
-                <p>Este es el código secreto para sumar sellos. Si tienes el Tag NFC físico, el cliente solo acerca su celular y se suma solo. Si no tiene NFC, el cliente abre su tarjeta, presiona "Escanear para sumar Sello" y apunta a este QR.</p>
+                <p>Este es el código que el cliente debe escanear DESDE LA APP (presionando el botón dorado) para sumar el sello. Si tienes el Tag NFC físico, el cliente abre la app, presiona escanear y lo acerca. El link de este código no es visible en tu panel para evitar que lo copien y se sumen sellos desde su casa.</p>
             </div>
         </div>
 
@@ -92,12 +90,16 @@
                 <p>Cada vez que un cliente se registra para activar su tarjeta, su nombre, celular y cumpleaños aparecen aquí automáticamente.</p>
             </div>
             <div class="step">
+                <h3>Sumar Sellos Manuales (+1)</h3>
+                <p>Si un cliente hace una compra online o por delivery, puedes recompensarlo yendo a la tabla de clientes en tu panel. Ahí verás sus tarjetas activas; solo dale al botón verde <strong>"+1"</strong> que está justo al lado de su premio para sumarle un sello sin que esté en el local.</p>
+            </div>
+            <div class="step">
                 <h3>Marketing por WhatsApp</h3>
                 <p>Escribe un mensaje en la caja de texto (ej. "Hoy 2x1 en café, solo por las próximas 2 horas 🏃‍♂️"). Dale al botón verde de WhatsApp y se abrirá el chat directo con ese cliente, con el mensaje ya copiado. Solo dale a enviar.</p>
             </div>
             <div class="step">
-                <h3>Gestión Individual de Billetera</h3>
-                <p>Si un cliente hace una compra online, dale al botón "Gestionar" y usa "+1 Sello" para recompensarlo sin que esté en el local.</p>
+                <h3>Botón Gestionar (Billetera)</h3>
+                <p>Si presionas "Gestionar", se abrirá una ventana donde verás los datos completos del cliente. Allí puedes <strong>eliminar</strong> alguna tarjeta que haya sido duplicada, o <strong>enviar un Premio Privado</strong> exclusivo para ese cliente.</p>
             </div>
         </div>
 
@@ -129,10 +131,6 @@
             </div>
         </div>
 
-        <center>
-            <a href="javascript:history.back()" class="btn-back">⬅ Volver al Panel</a>
-        </center>
-        <br>
     </div>
 </body>
 </html>
