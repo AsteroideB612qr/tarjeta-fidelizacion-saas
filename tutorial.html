@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial - FidelidadPro</title>
+    <style>
+        :root { --primary: #007bff; --dark: #1a1a1a; --light: #f8f9fa; --success: #28a745; --stamp: #ffc107; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background-color: var(--light); color: var(--dark); line-height: 1.6; }
+        header { background: var(--dark); color: white; padding: 40px 20px; text-align: center; }
+        header h1 { font-size: 2rem; margin-bottom: 10px; }
+        header p { color: #ccc; }
+        .container { max-width: 800px; margin: -30px auto 40px; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .card h2 { color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 1.4rem; }
+        .step { margin-bottom: 20px; padding-left: 15px; border-left: 3px solid var(--primary); }
+        .step h3 { font-size: 1.1rem; margin-bottom: 5px; }
+        .step p { font-size: 0.95rem; color: #555; margin-bottom: 10px; }
+        .tip { background: #e7f3ff; border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; margin-top: 15px; font-size: 0.9rem; }
+        .tip strong { color: var(--primary); }
+        .btn-back { display: inline-block; background: var(--dark); color: white; padding: 12px 25px; text-decoration: none; border-radius: 30px; font-weight: bold; margin-top: 20px; }
+        .wallet-instruction { background: #f0f4f8; padding: 20px; border-radius: 10px; margin-top: 10px; text-align: center; }
+        .wallet-instruction img { max-width: 100px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📘 Tutorial de FidelidadPro</h1>
+        <p>Aprende a sacarle el máximo jugo a tu plataforma.</p>
+    </header>
+
+    <div class="container">
+        
+        <div class="card">
+            <h2>1. Primeros Pasos y Seguridad</h2>
+            <div class="step">
+                <h3>Reclamar tu cuenta</h3>
+                <p>La primera vez que entres a tu link de Panel, verás la opción "Reclamar cuenta". Ingresa tu correo y crea una contraseña. A partir de ahí, solo usarás "Iniciar Sesión".</p>
+            </div>
+            <div class="step">
+                <h3>Configurar PIN de Cajero</h3>
+                <p>En la sección "Seguridad del Sistema", pon un PIN de 4 dígitos. Este PIN se usará únicamente si falla el escaneo del QR o NFC en el mostrador y necesitas sumar un sello manualmente.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>2. Personalización Visual</h2>
+            <div class="step">
+                <h3>Tu marca en la pantalla</h3>
+                <p>En "Personalización Visual", sube el logo de tu negocio (idealmente cuadrado). Elige el color de fondo de la tarjeta y el color de los sellos. ¡Así se verá en el celular de tu cliente!</p>
+            </div>
+            <div class="step">
+                <h3>Redes Sociales</h3>
+                <p>Pega los links de tu Instagram, Facebook, WhatsApp o Web. Estos aparecerán como botones redondos en la billetera del cliente para que te sigan o te contacten fácilmente.</p>
+            </div>
+            <div class="tip"><strong>💡 Tip:</strong> No olvides dar clic en "Guardar Diseño y Redes" después de hacer cambios.</div>
+        </div>
+
+        <div class="card">
+            <h2>3. Creación de Premios (FOMO)</h2>
+            <div class="step">
+                <h3>Premios Públicos vs Privados</h3>
+                <p><strong>Público:</strong> Aparece automáticamente en la billetera de TODOS los clientes (ej. "Café Gratis"). Úsalo para tu promoción principal.<br><strong>Privado:</strong> No aparece solo. Tú lo envías desde el CRM a clientes específicos (ej. "Premio secreto para clientes VIP").</p>
+            </div>
+            <div class="step">
+                <h3>Sellos Iniciales</h3>
+                <p>¿Quieres que el cliente sienta que ya avanzó algo? Pon "Sellos Iniciales: 1". Así, cuando active la tarjeta, ya tendrá un sello ganado y le faltarán menos.</p>
+            </div>
+            <div class="step">
+                <h3>Vigencia (FOMO)</h3>
+                <p>Por ejemplo, si es miércoles y quieres empujar ventas para el fin de semana, crea un premio que expire el viernes. El cliente verá "Válido hasta [Fecha]" y vendrá corriendo.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>4. Puntos de Venta (Mostrador)</h2>
+            <div class="step">
+                <h3>QR de Billetera (Acceso Directo)</h3>
+                <p>Imprime este QR y pégalo en tu mostrador. El cliente lo escanea con su cámara para abrir su tarjeta y ver su avance.</p>
+            </div>
+            <div class="step">
+                <h3>QR o NFC Sellador (Sumar Sello)</h3>
+                <p>Este es el código secreto para sumar sellos. Si tienes el Tag NFC físico, el cliente solo acerca su celular y se suma solo. Si no tiene NFC, el cliente abre su tarjeta, presiona "Escanear para sumar Sello" y apunta a este QR.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>5. Gestión de Clientes (CRM) y WhatsApp</h2>
+            <div class="step">
+                <h3>Base de Datos Automática</h3>
+                <p>Cada vez que un cliente se registra para activar su tarjeta, su nombre, celular y cumpleaños aparecen aquí automáticamente.</p>
+            </div>
+            <div class="step">
+                <h3>Marketing por WhatsApp</h3>
+                <p>Escribe un mensaje en la caja de texto (ej. "Hoy 2x1 en café, solo por las próximas 2 horas 🏃‍♂️"). Dale al botón verde de WhatsApp y se abrirá el chat directo con ese cliente, con el mensaje ya copiado. Solo dale a enviar.</p>
+            </div>
+            <div class="step">
+                <h3>Gestión Individual de Billetera</h3>
+                <p>Si un cliente hace una compra online, dale al botón "Gestionar" y usa "+1 Sello" para recompensarlo sin que esté en el local.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>6. Validar Premio (Canje)</h2>
+            <div class="step">
+                <h3>Cuando el cliente llena los sellos</h3>
+                <p>Cuando el cliente llega a la meta (ej. 5/5), la app le genera un Código de 4 dígitos. El cliente te dicta ese código.</p>
+            </div>
+            <div class="step">
+                <h3>Canjear el premio</h3>
+                <p>Tú vas a tu panel, a la sección "Validar Premio Canjeado", escribes el código y le das a "Canjear". ¡Listo! La tarjeta se reinicia y el ciclo vuelve a empezar.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>7. Cómo el Cliente instala la "App"</h2>
+            <div class="step">
+                <h3>Acceso Directo en su pantalla de inicio</h3>
+                <p>Para que el cliente no tenga que buscar el link cada vez, puede instalar la tarjeta como una App en su celular:</p>
+                <div class="wallet-instruction">
+                    <p><strong>Si usa Android (Chrome):</strong></p>
+                    <p>1. Abre el link de su billetera.<br>2. Toca los 3 puntitos arriba a la derecha.<br>3. Selecciona "Agregar a pantalla de inicio".<br>4. ¡Listo! Tu logo aparecerá en su pantalla.</p>
+                </div>
+                <div class="wallet-instruction" style="margin-top: 10px;">
+                    <p><strong>Si usa iPhone (Safari):</strong></p>
+                    <p>1. Abre el link en Safari.<br>2. Toca el ícono de "Compartir" (el cuadrito con una flecha hacia arriba).<br>3. Desliza y selecciona "Añadir a inicio".<br>4. ¡Listo! Tu logo aparecerá en su pantalla.</p>
+                </div>
+            </div>
+        </div>
+
+        <center>
+            <a href="javascript:history.back()" class="btn-back">⬅ Volver al Panel</a>
+        </center>
+        <br>
+    </div>
+</body>
+</html>
