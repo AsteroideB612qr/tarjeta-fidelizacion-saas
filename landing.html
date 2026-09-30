@@ -35,9 +35,44 @@
         .feature-item .check { color: var(--success); font-size: 1.5rem; font-weight: bold; }
         .feature-item h4 { font-size: 1.1rem; margin-bottom: 5px; }
         .feature-item p { font-size: 0.95rem; color: #666; }
+
+        /* NUEVO: Galería Visual (Mockups) */
+        .gallery { background-color: var(--light); padding: 60px 20px; text-align: center; }
+        .gallery h2 { font-size: 2rem; margin-bottom: 40px; }
+        .mockups-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 50px; max-width: 1000px; margin: 0 auto; }
+        .mockup-box { display: flex; flex-direction: column; align-items: center; }
+        .mockup-title { font-weight: bold; margin-bottom: 20px; color: var(--dark); font-size: 1.1rem; }
         
+        /* Maqueta Celular */
+        .phone-frame { width: 280px; height: 540px; background: var(--dark); border-radius: 35px; padding: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.2); position: relative; }
+        .phone-frame::before { content: ''; position: absolute; top: 18px; left: 50%; transform: translateX(-50%); width: 80px; height: 6px; background: #333; border-radius: 10px; z-index: 2; }
+        .phone-screen { background: #f0f4f8; width: 100%; height: 100%; border-radius: 25px; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding-top: 40px; gap: 15px; }
+        .ph-logo { width: 50px; height: 50px; background: var(--primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px; }
+        .ph-card { background: var(--dark); width: 220px; height: 250px; border-radius: 20px; padding: 20px; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .ph-card h3 { font-size: 16px; margin-bottom: 15px; }
+        .ph-stamps { display: flex; gap: 8px; margin-bottom: 20px; }
+        .ph-stamp { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); }
+        .ph-stamp.filled { background: var(--stamp); border-color: var(--stamp); }
+        .ph-btn { background: var(--stamp); color: #000; padding: 8px 20px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+
+        /* Maqueta Laptop/Panel */
+        .laptop-frame { width: 450px; max-width: 100%; background: white; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.15); overflow: hidden; border: 1px solid #ddd; }
+        .laptop-bar { height: 25px; background: #f1f1f1; display: flex; align-items: center; padding-left: 10px; gap: 5px; border-bottom: 1px solid #ddd; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+        .laptop-screen { padding: 20px; text-align: left; }
+        .lp-header { font-size: 14px; font-weight: bold; margin-bottom: 15px; color: var(--dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        .lp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .lp-table th { text-align: left; color: #666; padding-bottom: 10px; font-size: 10px; text-transform: uppercase; }
+        .lp-table td { padding: 10px 0; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .lp-tag { background: #f9f9f9; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
+        .lp-wa-btn { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+
+        @media (max-width: 768px) {
+            .laptop-frame { width: 100%; }
+        }
+
         /* Pricing */
-        .pricing { background-color: var(--light); padding: 60px 20px; text-align: center; }
+        .pricing { padding: 60px 20px; text-align: center; }
         .pricing h2 { font-size: 2rem; margin-bottom: 40px; }
         .price-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; align-items: stretch; }
         .price-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); width: 350px; border: 2px solid transparent; transition: transform 0.2s; display: flex; flex-direction: column; }
@@ -50,7 +85,6 @@
         .price-card ul li { margin-bottom: 10px; padding-left: 20px; position: relative; font-size: 0.95rem; }
         .price-card ul li::before { content: "✔"; color: var(--success); position: absolute; left: 0; font-weight: bold; }
         
-        /* CORRECCIÓN: Centrar tarjeta adicional */
         .extra-card { background: transparent; border: 2px dashed #ccc; padding: 20px; border-radius: 12px; width: 350px; max-width: 100%; margin: 30px auto 0; text-align: center; box-sizing: border-box; }
         .extra-card h4 { color: var(--dark); margin-bottom: 10px; }
         .extra-card p { font-size: 0.9rem; color: #666; margin-bottom: 15px; }
@@ -127,6 +161,75 @@
                     <div>
                         <h4>Premios con Vigencia (FOMO)</h4>
                         <p>Crea premios que expiran ("2x1 solo este viernes"). El cliente verá la cuenta regresiva y vendrá corriendo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVA SECCIÓN: GALERÍA VISUAL -->
+    <div class="gallery">
+        <h2>Mira cómo funciona</h2>
+        <div class="mockups-container">
+            <!-- Mockup Celular (Cliente) -->
+            <div class="mockup-box">
+                <div class="mockup-title">📱 La Billetera del Cliente</div>
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="ph-logo">☕</div>
+                        <div style="font-weight:bold; font-size:14px;">Cafetería Central</div>
+                        <div class="ph-card">
+                            <h3>Café Gratis</h3>
+                            <div class="ph-stamps">
+                                <div class="ph-stamp filled"></div>
+                                <div class="ph-stamp filled"></div>
+                                <div class="ph-stamp filled"></div>
+                                <div class="ph-stamp"></div>
+                                <div class="ph-stamp"></div>
+                            </div>
+                            <div class="ph-btn">Escanear para sumar Sello</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mockup Laptop (Panel Negocio) -->
+            <div class="mockup-box">
+                <div class="mockup-title">💻 Tu Panel de Control</div>
+                <div class="laptop-frame">
+                    <div class="laptop-bar">
+                        <div class="dot" style="background:#ff5f56;"></div>
+                        <div class="dot" style="background:#ffbd2e;"></div>
+                        <div class="dot" style="background:#27c93f;"></div>
+                    </div>
+                    <div class="laptop-screen">
+                        <div class="lp-header">🛒 Gestión de Clientes (CRM)</div>
+                        <table class="lp-table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Tarjeta</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>María López</strong></td>
+                                    <td><span class="lp-tag">⭐ 3/5</span></td>
+                                    <td><button class="lp-wa-btn">WhatsApp</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Carlos Pérez</strong></td>
+                                    <td><span class="lp-tag">🏆 5/5</span></td>
+                                    <td><button class="lp-wa-btn">WhatsApp</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Lucía García</strong></td>
+                                    <td><span class="lp-tag">⭐ 1/5</span></td>
+                                    <td><button class="lp-wa-btn">WhatsApp</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
