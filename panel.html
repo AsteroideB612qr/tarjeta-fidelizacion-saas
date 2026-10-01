@@ -60,7 +60,7 @@
 
     <div id="appView" class="container hidden">
         <div class="header-card" style="position: relative;">
-            <span class="version-tag">LoyaltyPRO v9.5.2</span>
+            <span class="version-tag">LoyaltyPRO v9.5.3</span>
             <div>
                 <h1 id="tituloNegocio">Cargando...</h1>
                 <div id="subAlert" style="margin-top:10px; margin-bottom:0;"></div>
@@ -223,7 +223,8 @@
                                 alert("Sin permiso. Este panel ya fue reclamado por otra cuenta."); 
                             } else {
                                 if (!docSnap.data().ownerUid) { 
-                                    await setDoc(docRef, { ownerUid: user.uid }, { merge: true }); 
+                                    // ACTUALIZACIÓN: Guardamos también el email del dueño para el Súper Admin
+                                    await setDoc(docRef, { ownerUid: user.uid, ownerEmail: user.email }, { merge: true }); 
                                 }
                                 document.getElementById('authView').classList.add('hidden'); 
                                 document.getElementById('appView').classList.remove('hidden');
