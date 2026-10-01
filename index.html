@@ -7,12 +7,12 @@
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
         .auth-box { max-width: 400px; margin: 50px auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); position: relative; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); position: relative; }
         h1, h2 { color: #1a1a1a; }
         h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-top: 30px; }
         .form-group { display: flex; gap: 10px; margin-bottom: 20px; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; width: 100%; box-sizing: border-box; }
-        button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; background-color: #007bff; color: white; font-weight: bold; transition: background 0.2s; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; background-color: #007bff; color: white; font-weight: bold; transition: background 0.2s; margin: 2px; }
         button:hover { background-color: #0056b3; }
         .btn-copy { background-color: #17a2b8; padding: 6px 12px; font-size: 12px; }
         .btn-danger { background-color: #dc3545; padding: 6px 12px; font-size: 12px; }
@@ -29,6 +29,7 @@
         .stamp-code { background: #f8f9fa; padding: 6px 10px; border-radius: 6px; font-family: monospace; font-weight: bold; color: #333; display: inline-block; margin-bottom: 5px; border: 1px solid #eee; }
         .hidden { display: none !important; }
         .header-actions { position: absolute; top: 30px; right: 30px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .owner-email { font-size: 11px; color: #888; word-break: break-all; margin-top: 5px; display: block; }
     </style>
 </head>
 <body>
@@ -59,7 +60,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>Nombre</th>
+                    <th>Nombre y Dueño</th>
                     <th>Panel Negocio</th>
                     <th>Código NFC</th>
                     <th>Estado Suscripción</th>
@@ -96,7 +97,7 @@
         import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // CAMBIA ESTE CORREO POR TU CORREO REAL DE ADMINISTRADOR
+        // Correo del Súper Admin
         const ADMIN_EMAIL = "activosonlineqr@gmail.com"; 
 
         window.loginAdmin = async function() {
@@ -141,12 +142,15 @@
 
         window.copiarLinkPanel = function(link) { navigator.clipboard.writeText(link).then(() => alert('¡Copiado!')); }
 
-        window.extenderSuscripcion = async function(id, currentVencimiento) {
+        // Función extendida para sumar días (por defecto 30, pero puede ser 1)
+        window.extenderSuscripcion = async function(id, currentVencimiento, days) {
+            days = days || 30;
             const now = new Date(); let baseDate = now;
             if(currentVencimiento && currentVencimiento > now.getTime()) baseDate = new Date(currentVencimiento);
-            baseDate.setDate(baseDate.getDate() + 30);
+            baseDate.setDate(baseDate.getDate() + days);
             await updateDoc(doc(db, "negocios", id), { fechaVencimiento: baseDate.getTime() });
-            alert("¡Extendido +30 días!"); cargarNegocios();
+            alert(`¡Suscripción extendida por ${days} día(s)!`); 
+            cargarNegocios();
         }
 
         window.editarStamp = async function(id, current) {
@@ -178,13 +182,16 @@
             tbody.innerHTML = '';
             querySnapshot.forEach((docSnap) => {
                 const n = docSnap.data(), id = docSnap.id, linkPanel = `${baseUrl}panel.html?id=${id}`, sCode = n.stampCode || 'STAMP_DEFAULT';
-                let estadoHtml = `<span class="status-expired">Vencido</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}', null)">Activar +30d</button>`;
+                const ownerEmail = n.ownerEmail ? n.ownerEmail : 'No reclamado';
+                
+                let estadoHtml = `<span class="status-expired">Vencido</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}', null, 30)">+30d</button> <button class="btn-success" onclick="extenderSuscripcion('${id}', null, 1)">+1d</button>`;
                 if(n.fechaVencimiento) {
                     const fecha = new Date(n.fechaVencimiento);
-                    if(fecha > new Date()) estadoHtml = `<span class="status-active">Activo</span><br>Vence: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento})">Extender +30d</button>`;
-                    else estadoHtml = `<span class="status-expired">Vencido</span><br>Venció: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento})">Reactivar +30d</button>`;
+                    if(fecha > new Date()) estadoHtml = `<span class="status-active">Activo</span><br>Vence: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento}, 30)">+30d</button> <button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento}, 1)">+1d</button>`;
+                    else estadoHtml = `<span class="status-expired">Vencido</span><br>Venció: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento}, 30)">+30d</button> <button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento}, 1)">+1d</button>`;
                 }
-                tbody.innerHTML += `<tr><td><strong>${n.nombre}</strong></td><td><a href="${linkPanel}" target="_blank">Abrir Panel</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar</button></td><td><span class="stamp-code">${sCode}</span><br><button class="btn-copy" onclick="editarStamp('${id}', '${sCode}')">Editar</button></td><td>${estadoHtml}</td><td><button class="btn-copy" onclick="verQRs('${id}', '${n.nombre}')">Ver QRs</button><br><br><button class="btn-danger" onclick="eliminarNegocio('${id}', '${n.nombre}')">Eliminar</button></td></tr>`;
+                
+                tbody.innerHTML += `<tr><td><strong>${n.nombre}</strong><span class="owner-email">${ownerEmail}</span></td><td><a href="${linkPanel}" target="_blank">Abrir Panel</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar</button></td><td><span class="stamp-code">${sCode}</span><br><button class="btn-copy" onclick="editarStamp('${id}', '${sCode}')">Editar</button></td><td>${estadoHtml}</td><td><button class="btn-copy" onclick="verQRs('${id}', '${n.nombre}')">Ver QRs</button><br><button class="btn-danger" style="margin-top:5px;" onclick="eliminarNegocio('${id}', '${n.nombre}')">Eliminar</button></td></tr>`;
             });
         }
     </script>
