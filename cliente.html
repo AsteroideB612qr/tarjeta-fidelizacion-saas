@@ -6,7 +6,7 @@
     <meta http-equiv="Expires" content="0">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Billetera</title>
+    <title>Mi Billetera - LoyaltyPRO</title>
     <style>
         :root { --primary-color: #1a1a1a; --stamp-color: #ffc107; }
         body { 
@@ -73,7 +73,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">v9.4.0</span>
+        <span class="version-tag">LoyaltyPRO v9.4.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -196,7 +196,7 @@
                         if(data.stampCode) stampCode = data.stampCode;
                         
                         if(logoUrl) {
-                            const manifest = { name: nombreNegocio, short_name: (nombreNegocio || "Fidelidad").substring(0,12), display: "standalone", background_color: "#ffffff", theme_color: colorFondo, start_url: `${baseUrl}cliente.html?id=${negocioId}`, scope: `${baseUrl}cliente.html`, icons: [{ src: logoUrl, sizes: "512x512", type: "image/png", purpose: "any" }] };
+                            const manifest = { name: nombreNegocio, short_name: (nombreNegocio || "LoyaltyPRO").substring(0,12), display: "standalone", background_color: "#ffffff", theme_color: colorFondo, start_url: `${baseUrl}cliente.html?id=${negocioId}`, scope: `${baseUrl}cliente.html`, icons: [{ src: logoUrl, sizes: "512x512", type: "image/png", purpose: "any" }] };
                             const stringManifest = JSON.stringify(manifest); const blob = new Blob([stringManifest], {type: 'application/json'}); const manifestURL = URL.createObjectURL(blob);
                             let mLink = document.querySelector('link[rel="manifest"]'); if (!mLink) { mLink = document.createElement('link'); mLink.rel = 'manifest'; document.head.appendChild(mLink); } mLink.href = manifestURL;
                             let appleLink = document.querySelector('link[rel="apple-touch-icon"]'); if (!appleLink) { appleLink = document.createElement('link'); appleLink.rel = 'apple-touch-icon'; document.head.appendChild(appleLink); } appleLink.href = logoUrl;
