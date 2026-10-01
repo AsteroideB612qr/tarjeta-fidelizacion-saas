@@ -41,7 +41,8 @@
     </style>
 </head>
 <body>
-    <div id="authView" class="auth-box hidden">
+    <!-- Se quitó la clase 'hidden' para evitar pantallas blancas en móvil si el JS tarda en cargar -->
+    <div id="authView" class="auth-box">
         <h2 style="border:none; padding:0; margin-bottom:20px;">🔒 Acceso al Panel</h2>
         <div id="loginFormBox">
             <input type="email" id="loginEmail" placeholder="Email" style="margin-bottom: 15px;">
@@ -60,7 +61,7 @@
 
     <div id="appView" class="container hidden">
         <div class="header-card" style="position: relative;">
-            <span class="version-tag">LoyaltyPRO v9.4.0</span>
+            <span class="version-tag">LoyaltyPRO v9.5.0</span>
             <div>
                 <h1 id="tituloNegocio">Cargando...</h1>
                 <div id="subAlert" style="margin-top:10px; margin-bottom:0;"></div>
@@ -210,20 +211,41 @@
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        if (docSnap.data().ownerUid && docSnap.data().ownerUid !== user.uid) { await signOut(auth); return alert("Sin permiso."); }
-                        if (!docSnap.data().ownerUid) { await setDoc(docRef, { ownerUid: user.uid }, { merge: true }); }
-                        document.getElementById('authView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden');
-                        cargarPremios(); cargarClientes();
+                    try {
+                        const docSnap = await getDoc(docRef);
+                        if (docSnap.exists()) {
+                            if (docSnap.data().ownerUid && docSnap.data().ownerUid !== user.uid) { 
+                                await signOut(auth); 
+                                return alert("Sin permiso. Este panel ya fue reclamado por otra cuenta."); 
+                            }
+                            if (!docSnap.data().ownerUid) { 
+                                await setDoc(docRef, { ownerUid: user.uid }, { merge: true }); 
+                            }
+                            document.getElementById('authView').classList.add('hidden'); 
+                            document.getElementById('appView').classList.remove('hidden');
+                            cargarPremios(); cargarClientes();
+                        } else {
+                            await signOut(auth);
+                            alert("El negocio no existe.");
+                        }
+                    } catch(e) {
+                        console.error("Error de autenticación:", e);
+                        alert("Hubo un error al acceder al panel: " + e.message);
+                        await signOut(auth);
                     }
                 } else {
-                    document.getElementById('authView').classList.remove('hidden'); document.getElementById('appView').classList.add('hidden');
-                    const d = await getDoc(docRef);
-                    if (d.exists() && d.data().ownerUid) {
-                        mostrarLogin();
-                        document.getElementById('regLink').style.display = 'none'; 
-                    } else {
+                    document.getElementById('authView').classList.remove('hidden'); 
+                    document.getElementById('appView').classList.add('hidden');
+                    try {
+                        const d = await getDoc(docRef);
+                        if (d.exists() && d.data().ownerUid) {
+                            mostrarLogin();
+                            document.getElementById('regLink').style.display = 'none'; 
+                        } else {
+                            mostrarRegistro();
+                        }
+                    } catch (e) {
+                        console.error("Error al leer negocio:", e);
                         mostrarRegistro();
                     }
                 }
