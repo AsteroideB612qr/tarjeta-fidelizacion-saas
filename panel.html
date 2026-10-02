@@ -60,7 +60,7 @@
 
     <div id="appView" class="container hidden">
         <div class="header-card" style="position: relative;">
-            <span class="version-tag">LoyaltyPRO v9.5.3</span>
+            <span class="version-tag">LoyaltyPRO v9.6.0</span>
             <div>
                 <h1 id="tituloNegocio">Cargando...</h1>
                 <div id="subAlert" style="margin-top:10px; margin-bottom:0;"></div>
@@ -79,6 +79,23 @@
                 <div><label>Color Fondo Tarjeta</label><input type="color" id="colorFondo" value="#1a1a1a" style="height: 45px; padding: 5px;"></div>
                 <div><label>Color de Sellos</label><input type="color" id="colorSello" value="#ffc107" style="height: 45px; padding: 5px;"></div>
             </div>
+            
+            <!-- NUEVO: Selector de ícono de sello -->
+            <div class="form-row">
+                <div style="flex:1;"><label>Ícono de Sellos</label>
+                    <select id="iconoSellos">
+                        <option value="★">⭐ Estrella (Por defecto)</option>
+                        <option value="☕">☕ Café</option>
+                        <option value="✂️">✂️ Tijera</option>
+                        <option value="🛒">🛒 Carrito</option>
+                        <option value="🍕">🍕 Pizza</option>
+                        <option value="🐾">🐾 Huella</option>
+                        <option value="❤️">❤️ Corazón</option>
+                        <option value="💪">💪 Gimnasio</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="form-row">
                 <div><label>Sitio Web (URL)</label><input type="url" id="webLink" placeholder="https://miweb.com"></div>
                 <div><label>Instagram URL</label><input type="url" id="igLink" placeholder="https://instagram.com/..."></div>
@@ -189,7 +206,7 @@
         const baseUrl = window.location.origin + window.location.pathname.replace('panel.html', '');
         let clientesData = [], premiosMap = {}, currentModalClientId = null, isExpired = false;
         let unsubPremios = null, unsubClientes = null, activeCardListeners = [];
-        let isAuthProcessing = false; // Candado anti-duplicación de login
+        let isAuthProcessing = false; 
 
         window.onload = async function() {
             try {
@@ -197,7 +214,11 @@
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     document.getElementById('tituloNegocio').innerText = "Panel: " + data.nombre;
-                    if(data.diseno) { document.getElementById('colorFondo').value = data.diseno.colorFondo || '#1a1a1a'; document.getElementById('colorSello').value = data.diseno.colorSello || '#ffc107'; }
+                    if(data.diseno) { 
+                        document.getElementById('colorFondo').value = data.diseno.colorFondo || '#1a1a1a'; 
+                        document.getElementById('colorSello').value = data.diseno.colorSello || '#ffc107'; 
+                        if(data.diseno.iconoSellos) document.getElementById('iconoSellos').value = data.diseno.iconoSellos; 
+                    }
                     if(data.redes) { document.getElementById('webLink').value = data.redes.web || ''; document.getElementById('igLink').value = data.redes.ig || ''; document.getElementById('tkLink').value = data.redes.tk || ''; document.getElementById('fbLink').value = data.redes.fb || ''; document.getElementById('mailLink').value = data.redes.mail || ''; document.getElementById('waLink').value = data.redes.wa || ''; }
                     const alertDiv = document.getElementById('subAlert');
                     if(data.fechaVencimiento) {
@@ -210,7 +231,6 @@
             } catch (e) { alert("Error al cargar."); }
 
             onAuthStateChanged(auth, async (user) => {
-                // Si ya estamos procesando un login, ignoramos el disparo duplicado de Firebase
                 if (isAuthProcessing) return;
                 isAuthProcessing = true;
 
@@ -222,10 +242,9 @@
                                 await signOut(auth); 
                                 alert("Sin permiso. Este panel ya fue reclamado por otra cuenta."); 
                             } else {
-                            // Si no tiene dueño, o si ya tiene dueño pero falta su email (negocios antiguos), lo guardamos
-                            if (!docSnap.data().ownerUid || !docSnap.data().ownerEmail) { 
-                                await setDoc(docRef, { ownerUid: user.uid, ownerEmail: user.email }, { merge: true }); 
-                            }
+                                if (!docSnap.data().ownerUid || !docSnap.data().ownerEmail) { 
+                                    await setDoc(docRef, { ownerUid: user.uid, ownerEmail: user.email }, { merge: true }); 
+                                }
                                 document.getElementById('authView').classList.add('hidden'); 
                                 document.getElementById('appView').classList.remove('hidden');
                                 cargarPremios(); cargarClientes();
@@ -240,7 +259,7 @@
                         await signOut(auth);
                     }
                 } else {
-                    cleanupListeners(); // Limpiar memoria al cerrar sesión
+                    cleanupListeners(); 
                     document.getElementById('authView').classList.remove('hidden'); 
                     document.getElementById('appView').classList.add('hidden');
                     try {
@@ -255,11 +274,10 @@
                         mostrarRegistro();
                     }
                 }
-                isAuthProcessing = false; // Liberar candado
+                isAuthProcessing = false; 
             });
         };
 
-        // Limpieza de listeners para evitar duplicación en tiempo real
         function cleanupListeners() {
             if(unsubPremios) { unsubPremios(); unsubPremios = null; }
             if(unsubClientes) { unsubClientes(); unsubClientes = null; }
@@ -299,7 +317,7 @@
 
         window.guardarDiseno = async function() {
             if(isExpired) return alert("Suscripción vencida.");
-            const diseno = { colorFondo: document.getElementById('colorFondo').value, colorSello: document.getElementById('colorSello').value };
+            const diseno = { colorFondo: document.getElementById('colorFondo').value, colorSello: document.getElementById('colorSello').value, iconoSellos: document.getElementById('iconoSellos').value };
             const redes = { web: document.getElementById('webLink').value, ig: document.getElementById('igLink').value, tk: document.getElementById('tkLink').value, fb: document.getElementById('fbLink').value, mail: document.getElementById('mailLink').value, wa: document.getElementById('waLink').value };
             const f = document.getElementById('logoFile');
             if (f.files[0]) { const r = new FileReader(); r.onload = async function(e) { diseno.logo = e.target.result; await setDoc(docRef, { diseno, redes }, { merge: true }); alert("Guardado!"); }; r.readAsDataURL(f.files[0]); }
