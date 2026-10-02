@@ -73,7 +73,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">LoyaltyPRO v9.4.0</span>
+        <span class="version-tag">LoyaltyPRO v9.6.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -168,7 +168,7 @@
 
         function initApp() {
             const baseUrl = window.location.origin + window.location.pathname.replace('cliente.html', '');
-            let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {};
+            let clienteId = null, nombreNegocio = "", logoUrl = "", colorFondo = "#1a1a1a", colorSello = "#ffc107", redes = {}, iconoSellos = "★";
             let isExpired = true, clientName = "";
             let ndefReader = null, isStamping = false, stampCode = "FIDELIDAD_STAMP", html5QrCodeInstance = null;
             let unsubPremios = null, unsubTarjetas = null;
@@ -190,7 +190,14 @@
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         nombreNegocio = data.nombre;
-                        if(data.diseno) { logoUrl = data.diseno.logo || ""; colorFondo = data.diseno.colorFondo || "#1a1a1a"; colorSello = data.diseno.colorSello || "#ffc107"; document.documentElement.style.setProperty('--primary-color', colorFondo); document.documentElement.style.setProperty('--stamp-color', colorSello); }
+                        if(data.diseno) { 
+                            logoUrl = data.diseno.logo || ""; 
+                            colorFondo = data.diseno.colorFondo || "#1a1a1a"; 
+                            colorSello = data.diseno.colorSello || "#ffc107"; 
+                            iconoSellos = data.diseno.iconoSellos || "★"; // NUEVO: Cargar ícono o usar estrella por defecto
+                            document.documentElement.style.setProperty('--primary-color', colorFondo); 
+                            document.documentElement.style.setProperty('--stamp-color', colorSello); 
+                        }
                         if(data.redes) redes = data.redes;
                         if(data.fechaVencimiento) { isExpired = new Date(data.fechaVencimiento) < new Date(); }
                         if(data.stampCode) stampCode = data.stampCode;
@@ -319,7 +326,8 @@
                     let sAct = tData.sellos || 0; 
                     let exp = (premio.vigenciaFin && hoy > premio.vigenciaFin); 
                     let cod = tData.codigoRedencion;
-                    let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">★</div>` : '<div class="stamp"></div>';
+                    // NUEVO: Renderizar el ícono dinámico en lugar de la estrella hardcodeada
+                    let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">${iconoSellos}</div>` : '<div class="stamp"></div>';
                     let comp = sAct >= premio.sellosRequeridos;
                     
                     if (!exp && comp && !cod) { 
