@@ -60,7 +60,7 @@
 
     <div id="appView" class="container hidden">
         <div class="header-card" style="position: relative;">
-            <span class="version-tag">LoyaltyPRO v9.6.0</span>
+            <span class="version-tag">LoyaltyPRO v9.7.0</span>
             <div>
                 <h1 id="tituloNegocio">Cargando...</h1>
                 <div id="subAlert" style="margin-top:10px; margin-bottom:0;"></div>
@@ -79,8 +79,6 @@
                 <div><label>Color Fondo Tarjeta</label><input type="color" id="colorFondo" value="#1a1a1a" style="height: 45px; padding: 5px;"></div>
                 <div><label>Color de Sellos</label><input type="color" id="colorSello" value="#ffc107" style="height: 45px; padding: 5px;"></div>
             </div>
-            
-            <!-- NUEVO: Selector de ícono de sello -->
             <div class="form-row">
                 <div style="flex:1;"><label>Ícono de Sellos</label>
                     <select id="iconoSellos">
@@ -95,7 +93,6 @@
                     </select>
                 </div>
             </div>
-
             <div class="form-row">
                 <div><label>Sitio Web (URL)</label><input type="url" id="webLink" placeholder="https://miweb.com"></div>
                 <div><label>Instagram URL</label><input type="url" id="igLink" placeholder="https://instagram.com/..."></div>
@@ -207,6 +204,7 @@
         let clientesData = [], premiosMap = {}, currentModalClientId = null, isExpired = false;
         let unsubPremios = null, unsubClientes = null, activeCardListeners = [];
         let isAuthProcessing = false; 
+        let linkCortoGlobal = ""; // NUEVO: Variable para guardar el link corto
 
         window.onload = async function() {
             try {
@@ -220,6 +218,7 @@
                         if(data.diseno.iconoSellos) document.getElementById('iconoSellos').value = data.diseno.iconoSellos; 
                     }
                     if(data.redes) { document.getElementById('webLink').value = data.redes.web || ''; document.getElementById('igLink').value = data.redes.ig || ''; document.getElementById('tkLink').value = data.redes.tk || ''; document.getElementById('fbLink').value = data.redes.fb || ''; document.getElementById('mailLink').value = data.redes.mail || ''; document.getElementById('waLink').value = data.redes.wa || ''; }
+                    if(data.linkCorto) linkCortoGlobal = data.linkCorto; // NUEVO: Cargar link corto
                     const alertDiv = document.getElementById('subAlert');
                     if(data.fechaVencimiento) {
                         const fecha = new Date(data.fechaVencimiento);
@@ -286,7 +285,12 @@
 
         function setupLinks() {
             const cb = new Date().getTime();
-            const wUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cb}`, sUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cb}`;
+            const longWUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cb}`; // Link largo original
+            const sUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cb}`; // El sellador siempre usa el largo
+            
+            // NUEVA LÓGICA: Si hay link corto, lo usa para la billetera. Si no, usa el largo.
+            const wUrl = linkCortoGlobal ? linkCortoGlobal : longWUrl;
+
             document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(wUrl)}`;
             document.getElementById('linkWallet').innerText = wUrl;
             document.getElementById('qrSello').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(sUrl)}`;
