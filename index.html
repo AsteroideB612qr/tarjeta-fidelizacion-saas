@@ -30,6 +30,7 @@
         .hidden { display: none !important; }
         .header-actions { position: absolute; top: 30px; right: 30px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .owner-email { font-size: 11px; color: #888; word-break: break-all; margin-top: 5px; display: block; }
+        .short-link { font-size: 11px; color: #17a2b8; word-break: break-all; margin-top: 3px; display: block; }
     </style>
 </head>
 <body>
@@ -48,7 +49,7 @@
             <button class="btn-danger" onclick="cerrarSesionAdmin()">Cerrar Sesión</button>
         </div>
         <h1>🚀 Panel de Administración SaaS</h1>
-        <p>Gestiona los negocios, suscripciones y códigos NFC.</p>
+        <p>Gestiona los negocios, suscripciones, códigos NFC y Links Cortos.</p>
 
         <h2>Crear Nuevo Negocio</h2>
         <div class="form-group">
@@ -60,11 +61,11 @@
         <table>
             <thead>
                 <tr>
-                    <th>Nombre y Dueño</th>
-                    <th>Panel Negocio</th>
+                    <th>Datos del Negocio</th>
+                    <th>Panel y Links</th>
                     <th>Código NFC</th>
                     <th>Estado Suscripción</th>
-                    <th>Acciones</th>
+                    <th>Acciones Rápidas</th>
                 </tr>
             </thead>
             <tbody id="tablaNegocios"><tr><td colspan="5">Cargando...</td></tr></tbody>
@@ -97,7 +98,6 @@
         import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // Correo del Súper Admin
         const ADMIN_EMAIL = "activosonlineqr@gmail.com"; 
 
         window.loginAdmin = async function() {
@@ -142,7 +142,6 @@
 
         window.copiarLinkPanel = function(link) { navigator.clipboard.writeText(link).then(() => alert('¡Copiado!')); }
 
-        // Función extendida para sumar días (por defecto 30, pero puede ser 1)
         window.extenderSuscripcion = async function(id, currentVencimiento, days) {
             days = days || 30;
             const now = new Date(); let baseDate = now;
@@ -156,6 +155,16 @@
         window.editarStamp = async function(id, current) {
             const newStamp = prompt("Código NFC:", current);
             if(newStamp !== null && newStamp.trim() !== "") { await updateDoc(doc(db, "negocios", id), { stampCode: newStamp.trim() }); alert("Actualizado."); cargarNegocios(); }
+        }
+
+        // NUEVA FUNCIÓN: Editar Link Corto
+        window.editarLinkCorto = async function(id, current) {
+            const newLink = prompt("Pega aquí el Link Corto (ej. https://tinyurl.com/mi-negocio):", current || "");
+            if(newLink !== null) {
+                await updateDoc(doc(db, "negocios", id), { linkCorto: newLink.trim() });
+                alert("Link corto guardado. El negocio verá el cambio al actualizar su panel.");
+                cargarNegocios();
+            }
         }
 
         window.verQRs = function(id, nombre) {
@@ -183,6 +192,7 @@
             querySnapshot.forEach((docSnap) => {
                 const n = docSnap.data(), id = docSnap.id, linkPanel = `${baseUrl}panel.html?id=${id}`, sCode = n.stampCode || 'STAMP_DEFAULT';
                 const ownerEmail = n.ownerEmail ? n.ownerEmail : 'No reclamado';
+                const linkCorto = n.linkCorto || ''; // NUEVO: Link corto si existe
                 
                 let estadoHtml = `<span class="status-expired">Vencido</span><br><button class="btn-success" onclick="extenderSuscripcion('${id}', null, 30)">+30d</button> <button class="btn-success" onclick="extenderSuscripcion('${id}', null, 1)">+1d</button>`;
                 if(n.fechaVencimiento) {
@@ -191,7 +201,26 @@
                     else estadoHtml = `<span class="status-expired">Vencido</span><br>Venció: ${fecha.toLocaleDateString()}<br><button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento}, 30)">+30d</button> <button class="btn-success" onclick="extenderSuscripcion('${id}', ${n.fechaVencimiento}, 1)">+1d</button>`;
                 }
                 
-                tbody.innerHTML += `<tr><td><strong>${n.nombre}</strong><span class="owner-email">${ownerEmail}</span></td><td><a href="${linkPanel}" target="_blank">Abrir Panel</a><br><button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar</button></td><td><span class="stamp-code">${sCode}</span><br><button class="btn-copy" onclick="editarStamp('${id}', '${sCode}')">Editar</button></td><td>${estadoHtml}</td><td><button class="btn-copy" onclick="verQRs('${id}', '${n.nombre}')">Ver QRs</button><br><button class="btn-danger" style="margin-top:5px;" onclick="eliminarNegocio('${id}', '${n.nombre}')">Eliminar</button></td></tr>`;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>
+                            <strong>${n.nombre}</strong>
+                            <span class="owner-email">${ownerEmail}</span>
+                            ${linkCorto ? `<span class="short-link">🔗 ${linkCorto}</span>` : ''}
+                        </td>
+                        <td>
+                            <a href="${linkPanel}" target="_blank">Abrir Panel</a><br>
+                            <button class="btn-copy" onclick="copiarLinkPanel('${linkPanel}')">Copiar Link Panel</button><br><br>
+                            <button class="btn-copy" onclick="verQRs('${id}', '${n.nombre}')">Ver QRs Originales</button>
+                        </td>
+                        <td><span class="stamp-code">${sCode}</span><br><button class="btn-copy" onclick="editarStamp('${id}', '${sCode}')">Editar NFC</button></td>
+                        <td>${estadoHtml}</td>
+                        <td>
+                            <button class="btn-copy" onclick="editarLinkCorto('${id}', '${linkCorto}')">✂️ Link Corto</button><br><br>
+                            <button class="btn-danger" onclick="eliminarNegocio('${id}', '${n.nombre}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
             });
         }
     </script>
