@@ -60,7 +60,7 @@
 
     <div id="appView" class="container hidden">
         <div class="header-card" style="position: relative;">
-            <span class="version-tag">LoyaltyPRO v9.7.0</span>
+            <span class="version-tag">LoyaltyPRO v9.8.0</span>
             <div>
                 <h1 id="tituloNegocio">Cargando...</h1>
                 <div id="subAlert" style="margin-top:10px; margin-bottom:0;"></div>
@@ -172,6 +172,7 @@
         </div>
     </div>
 
+    <!-- Modal Gestión Billetera -->
     <div id="walletModal" class="modal-overlay hidden">
         <div class="modal-box">
             <h2 style="border:none; padding:0; margin-bottom:15px;">Gestión de Billetera</h2>
@@ -190,6 +191,26 @@
         </div>
     </div>
 
+    <!-- NUEVO: Modal Editar Premio -->
+    <div id="premioModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h2 style="border:none; padding:0; margin-bottom:15px;">✏️ Editar Premio</h2>
+            <input type="hidden" id="editPremioId">
+            <label>Nombre del Premio</label>
+            <input type="text" id="editPremioNombre" style="margin-bottom: 10px;">
+            <div class="form-row" style="gap: 10px;">
+                <div><label>Total Sellos</label><input type="number" id="editPremioSellos" min="1" style="margin-bottom: 10px;"></div>
+                <div><label>Sellos Iniciales</label><input type="number" id="editPremioIniciales" min="0" value="0" style="margin-bottom: 10px;"></div>
+            </div>
+            <div class="form-row" style="gap: 10px;">
+                <div><label>Vigencia Desde</label><input type="date" id="editPremioInicio" style="margin-bottom: 10px;"></div>
+                <div><label>Vigencia Hasta</label><input type="date" id="editPremioFin" style="margin-bottom: 10px;"></div>
+            </div>
+            <button class="btn-success" onclick="guardarEdicionPremio()" style="width:100%; margin-top: 10px;">Guardar Cambios</button>
+            <button class="btn-gray" onclick="closePremioModal()" style="width: 100%; margin-top: 10px;">Cancelar</button>
+        </div>
+    </div>
+
     <script type="module">
         import { db, auth } from "./firebase.js";
         import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, writeBatch, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -204,7 +225,7 @@
         let clientesData = [], premiosMap = {}, currentModalClientId = null, isExpired = false;
         let unsubPremios = null, unsubClientes = null, activeCardListeners = [];
         let isAuthProcessing = false; 
-        let linkCortoGlobal = ""; // NUEVO: Variable para guardar el link corto
+        let linkCortoGlobal = ""; 
 
         window.onload = async function() {
             try {
@@ -218,7 +239,7 @@
                         if(data.diseno.iconoSellos) document.getElementById('iconoSellos').value = data.diseno.iconoSellos; 
                     }
                     if(data.redes) { document.getElementById('webLink').value = data.redes.web || ''; document.getElementById('igLink').value = data.redes.ig || ''; document.getElementById('tkLink').value = data.redes.tk || ''; document.getElementById('fbLink').value = data.redes.fb || ''; document.getElementById('mailLink').value = data.redes.mail || ''; document.getElementById('waLink').value = data.redes.wa || ''; }
-                    if(data.linkCorto) linkCortoGlobal = data.linkCorto; // NUEVO: Cargar link corto
+                    if(data.linkCorto) linkCortoGlobal = data.linkCorto; 
                     const alertDiv = document.getElementById('subAlert');
                     if(data.fechaVencimiento) {
                         const fecha = new Date(data.fechaVencimiento);
@@ -285,10 +306,9 @@
 
         function setupLinks() {
             const cb = new Date().getTime();
-            const longWUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cb}`; // Link largo original
-            const sUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cb}`; // El sellador siempre usa el largo
+            const longWUrl = `${baseUrl}cliente.html?id=${negocioId}&t=${cb}`; 
+            const sUrl = `${baseUrl}cliente.html?id=${negocioId}&accion=sello&t=${cb}`; 
             
-            // NUEVA LÓGICA: Si hay link corto, lo usa para la billetera. Si no, usa el largo.
             const wUrl = linkCortoGlobal ? linkCortoGlobal : longWUrl;
 
             document.getElementById('qrWallet').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(wUrl)}`;
@@ -348,6 +368,36 @@
             }
         }
 
+        // NUEVAS FUNCIONES: Editar Premio
+        window.abrirModalEditarPremio = function(id) {
+            const premio = premiosMap[id];
+            if(!premio) return;
+            document.getElementById('editPremioId').value = id;
+            document.getElementById('editPremioNombre').value = premio.nombre || '';
+            document.getElementById('editPremioSellos').value = premio.sellosRequeridos || 1;
+            document.getElementById('editPremioIniciales').value = premio.sellosIniciales || 0;
+            document.getElementById('editPremioInicio').value = premio.vigenciaInicio || '';
+            document.getElementById('editPremioFin').value = premio.vigenciaFin || '';
+            document.getElementById('premioModal').classList.remove('hidden');
+        }
+        window.closePremioModal = function() { document.getElementById('premioModal').classList.add('hidden'); }
+        window.guardarEdicionPremio = async function() {
+            const id = document.getElementById('editPremioId').value;
+            const p = {
+                nombre: document.getElementById('editPremioNombre').value,
+                sellosRequeridos: parseInt(document.getElementById('editPremioSellos').value),
+                sellosIniciales: parseInt(document.getElementById('editPremioIniciales').value) || 0,
+                vigenciaInicio: document.getElementById('editPremioInicio').value,
+                vigenciaFin: document.getElementById('editPremioFin').value
+            };
+            if(!p.nombre || !p.sellosRequeridos || !p.vigenciaInicio || !p.vigenciaFin) return alert("Completa todos los campos.");
+            try {
+                await updateDoc(doc(db, "negocios", negocioId, "premios", id), p);
+                alert("¡Premio actualizado! Los clientes verán los cambios al instante.");
+                closePremioModal();
+            } catch(e) { alert("Error al actualizar."); }
+        }
+
         function cargarPremios() {
             const q = collection(db, "negocios", negocioId, "premios");
             if(unsubPremios) unsubPremios();
@@ -360,7 +410,16 @@
                     premiosMap[d.id] = d.data(); 
                     const link = `${baseUrl}cliente.html?id=${negocioId}&premio=${d.id}`; 
                     const v = d.data().visibilidad === 'privado' ? 'Privado' : 'Público'; 
-                    t.innerHTML += `<tr><td><strong>${d.data().nombre}</strong></td><td>${v}</td><td>${d.data().vigenciaInicio} al ${d.data().vigenciaFin}</td><td><a href="${link}" target="_blank">Link</a></td><td><button class="btn-danger" onclick="eliminarPremio('${d.id}')">Elim</button></td></tr>`; 
+                    t.innerHTML += `<tr>
+                        <td><strong>${d.data().nombre}</strong></td>
+                        <td>${v}</td>
+                        <td>${d.data().vigenciaInicio} al ${d.data().vigenciaFin}</td>
+                        <td><a href="${link}" target="_blank">Link</a></td>
+                        <td>
+                            <button class="btn-gray" style="padding:4px 8px; font-size:10px; margin-bottom:5px; width:100%;" onclick="abrirModalEditarPremio('${d.id}')">✏️ Editar</button>
+                            <button class="btn-danger" style="padding:4px 8px; font-size:10px; width:100%;" onclick="eliminarPremio('${d.id}')">Elim</button>
+                        </td>
+                    </tr>`; 
                 });
             });
         }
