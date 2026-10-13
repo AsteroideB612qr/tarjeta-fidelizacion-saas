@@ -38,6 +38,12 @@
         .wallet-item { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         .hidden { display: none !important; }
         .version-tag { position: absolute; top: 20px; right: 20px; background: #007bff; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+        
+        /* NUEVO: Estilos Dashboard */
+        .dashboard-grid { display: flex; gap: 20px; flex-wrap: wrap; text-align: center; margin-bottom: 20px; }
+        .metric-card { flex: 1; min-width: 150px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
+        .metric-number { font-size: 2.2rem; font-weight: bold; color: var(--dark); margin: 0; line-height: 1; }
+        .metric-label { margin: 8px 0 0; font-size: 14px; color: #666; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -60,7 +66,7 @@
 
     <div id="appView" class="container hidden">
         <div class="header-card" style="position: relative;">
-            <span class="version-tag">LoyaltyPRO v9.8.0</span>
+            <span class="version-tag">LoyaltyPRO v9.9.0</span>
             <div>
                 <h1 id="tituloNegocio">Cargando...</h1>
                 <div id="subAlert" style="margin-top:10px; margin-bottom:0;"></div>
@@ -69,6 +75,22 @@
                 <a href="https://wa.me/51984908819?text=Hola%2C%20necesito%20soporte%20con%20LoyaltyPRO%20para%20mi%20negocio" target="_blank" class="btn-wa" style="text-decoration:none; display:inline-block; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14px;">💬 Soporte</a>
                 <a href="tutorial.html" target="_blank" class="btn-gray" style="text-decoration:none; display:inline-block; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14px;">📘 Tutorial</a>
                 <button class="btn-gray" onclick="cerrarSesion()">Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <!-- NUEVO: Dashboard de Métricas -->
+        <div class="dashboard-grid">
+            <div class="metric-card">
+                <h3 class="metric-number" id="metricClients">0</h3>
+                <p class="metric-label">Clientes Registrados</p>
+            </div>
+            <div class="metric-card">
+                <h3 class="metric-number" id="metricStamps">0</h3>
+                <p class="metric-label">Sellos Otorgados</p>
+            </div>
+            <div class="metric-card">
+                <h3 class="metric-number" id="metricRewards">0</h3>
+                <p class="metric-label">Premios Canjeados</p>
             </div>
         </div>
 
@@ -172,7 +194,6 @@
         </div>
     </div>
 
-    <!-- Modal Gestión Billetera -->
     <div id="walletModal" class="modal-overlay hidden">
         <div class="modal-box">
             <h2 style="border:none; padding:0; margin-bottom:15px;">Gestión de Billetera</h2>
@@ -191,7 +212,6 @@
         </div>
     </div>
 
-    <!-- NUEVO: Modal Editar Premio -->
     <div id="premioModal" class="modal-overlay hidden">
         <div class="modal-box">
             <h2 style="border:none; padding:0; margin-bottom:15px;">✏️ Editar Premio</h2>
@@ -368,7 +388,6 @@
             }
         }
 
-        // NUEVAS FUNCIONES: Editar Premio
         window.abrirModalEditarPremio = function(id) {
             const premio = premiosMap[id];
             if(!premio) return;
@@ -446,9 +465,31 @@
             });
         }
 
+        // NUEVA FUNCIÓN: Calcular y mostrar métricas
+        function renderDashboard() {
+            let totalClients = clientesData.length;
+            let totalStamps = 0;
+            let totalRewards = 0;
+
+            clientesData.forEach(c => {
+                if (c.cards && c.cards.length > 0) {
+                    c.cards.forEach(card => {
+                        totalStamps += card.sellos || 0;
+                        if (card.codigoRedencion) {
+                            totalRewards++;
+                        }
+                    });
+                }
+            });
+
+            document.getElementById('metricClients').innerText = totalClients;
+            document.getElementById('metricStamps').innerText = totalStamps;
+            document.getElementById('metricRewards').innerText = totalRewards;
+        }
+
         function renderClientesTable() {
             const t = document.getElementById('tablaClientes'); t.innerHTML = '';
-            if(clientesData.length === 0) { t.innerHTML = '<tr><td colspan="4">Sin clientes.</td></tr>'; return; }
+            if(clientesData.length === 0) { t.innerHTML = '<tr><td colspan="4">Sin clientes.</td></tr>'; renderDashboard(); return; }
             for (const c of clientesData) {
                 let h = '<span style="color:#999;">Ninguna</span>';
                 if (c.cards && c.cards.length > 0) { 
@@ -461,6 +502,7 @@
                 }
                 t.innerHTML += `<tr><td><strong>${c.nombre}</strong><br><small>${c.contacto}</small></td><td>${h}</td><td><input type="text" placeholder="Msg..." id="msg-${c.id}" style="margin-bottom:5px; padding:8px; font-size:12px;"><button class="btn-wa" style="width:100%; padding:8px;" onclick="enviarWhatsApp('${c.id}','${c.telefono}')">WA</button></td><td><button class="btn-gray" style="padding:5px 10px; font-size:12px; margin-bottom:5px; width:100%;" onclick="abrirModalBilletera('${c.id}')">Gestionar</button><button class="btn-danger" style="width:100%; padding:5px; font-size:12px;" onclick="eliminarCliente('${c.id}')">Elim</button></td></tr>`;
             }
+            renderDashboard(); // Actualizar métricas cada vez que se actualiza la tabla
         }
 
         window.sumarSelloManual = async function(cid, tid, max) {
