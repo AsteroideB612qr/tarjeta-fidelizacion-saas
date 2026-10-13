@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Política de Privacidad - FidelidadPro</title>
+    <title>Política de Privacidad - LoyaltyPRO</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; line-height: 1.6; }
         .container { max-width: 800px; margin: auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         h1, h2 { color: #1a1a1a; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
         p { margin-bottom: 15px; }
+        strong { color: #007bff; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Política de Privacidad del Cliente</h1>
-        <p><strong>Última actualización:</strong> [Fecha de hoy]</p>
+        <p><strong>Última actualización:</strong> Octubre 2024</p>
 
-        <p>Esta política describe cómo el negocio afiliado (en adelante, "el Negocio") y la plataforma FidelidadPro recopilan, usan y protegen tus datos personales cuando te registras en nuestra tarjeta de fidelización digital.</p>
+        <p>Esta política describe cómo el negocio afiliado (en adelante, "el Negocio": <strong id="negocioNombre">el negocio afiliado</strong>) y la plataforma LoyaltyPro recopilan, usan y protegen tus datos personales cuando te registras en nuestra tarjeta de fidelización digital.</p>
 
         <h2>1. Datos que Recopilamos</h2>
         <p>Al registrarte en la tarjeta de fidelización, solicitamos:</p>
@@ -39,5 +40,27 @@
         <h2>5. Consentimiento</h2>
         <p>Al completar el formulario de registro y marcar la casilla de aceptación, confirmas que has leído esta política y das tu consentimiento explícito para que el Negocio procese tus datos para los fines descritos.</p>
     </div>
+
+    <script type="module">
+        import { db } from "./firebase.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Leer el ID del negocio de la URL (ej. privacidad.html?id=12345)
+        const urlParams = new URLSearchParams(window.location.search);
+        const negocioId = urlParams.get('id');
+
+        window.onload = async function() {
+            if (negocioId) {
+                try {
+                    const docSnap = await getDoc(doc(db, "negocios", negocioId));
+                    if (docSnap.exists()) {
+                        document.getElementById('negocioNombre').innerText = docSnap.data().nombre;
+                    }
+                } catch (e) {
+                    console.error("Error al cargar nombre del negocio:", e);
+                }
+            }
+        };
+    </script>
 </body>
 </html>
