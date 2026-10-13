@@ -73,7 +73,7 @@
 </head>
 <body>
     <div class="container">
-        <span class="version-tag">LoyaltyPRO v9.6.0</span>
+        <span class="version-tag">LoyaltyPRO v9.9.0</span>
 
         <div id="authForm" class="auth-card hidden">
             <div class="tabs">
@@ -99,7 +99,7 @@
                 
                 <div class="checkbox-container">
                     <input type="checkbox" id="regConsent" required>
-                    <label for="regConsent">Acepto recibir promociones y compartir mis datos con el negocio según la <a href="privacidad.html" target="_blank">Política de Privacidad</a>.</label>
+                    <label for="regConsent">Acepto recibir promociones y compartir mis datos con el negocio según la <a href="privacidad.html" target="_blank" id="regPrivacyLink">Política de Privacidad</a>.</label>
                 </div>
                 
                 <button class="btn-blue" onclick="registrar()">Registrarme</button>
@@ -117,7 +117,7 @@
             
             <div class="checkbox-container">
                 <input type="checkbox" id="cpConsent" required>
-                <label for="cpConsent">Acepto recibir promociones y compartir mis datos con el negocio según la <a href="privacidad.html" target="_blank">Política de Privacidad</a>.</label>
+                <label for="cpConsent">Acepto recibir promociones y compartir mis datos con el negocio según la <a href="privacidad.html" target="_blank" id="cpPrivacyLink">Política de Privacidad</a>.</label>
             </div>
             
             <button onclick="vincularNegocio()">Vincular mi cuenta</button>
@@ -129,7 +129,7 @@
             <div id="tarjetasContainer"></div>
             <button class="btn-gray" onclick="cerrarSesion()" style="margin-top:20px; background: transparent; color: #666; font-weight: normal; font-size: 14px;">Cerrar Sesión</button>
             <div class="legal-footer">
-                Al usar esta app, aceptas nuestros <a href="terminos.html" target="_blank">Términos de Servicio</a> y <a href="#" id="privacyLink" target="_blank">Política de Privacidad</a>.
+                Al usar esta app, aceptas nuestros <a href="terminos.html" target="_blank">Términos de Servicio</a> y <a href="#" id="footerPrivacyLink" target="_blank">Política de Privacidad</a>.
             </div>
         </div>
     </div>
@@ -157,6 +157,13 @@
         const negocioId = urlParams.get('id');
         const premioIdURL = urlParams.get('premio');
         const accion = urlParams.get('accion'); 
+
+        // CORRECCIÓN: Actualizar todos los links de privacidad con el ID del negocio real
+        const privacyLinks = ['footerPrivacyLink', 'regPrivacyLink', 'cpPrivacyLink'];
+        privacyLinks.forEach(id => {
+            const link = document.getElementById(id);
+            if (link) link.href = `privacidad.html?id=${negocioId}`;
+        });
 
         if (accion === 'sello') {
             sessionStorage.setItem('doStamp_' + negocioId, 'true');
@@ -194,7 +201,7 @@
                             logoUrl = data.diseno.logo || ""; 
                             colorFondo = data.diseno.colorFondo || "#1a1a1a"; 
                             colorSello = data.diseno.colorSello || "#ffc107"; 
-                            iconoSellos = data.diseno.iconoSellos || "★"; // NUEVO: Cargar ícono o usar estrella por defecto
+                            iconoSellos = data.diseno.iconoSellos || "★"; 
                             document.documentElement.style.setProperty('--primary-color', colorFondo); 
                             document.documentElement.style.setProperty('--stamp-color', colorSello); 
                         }
@@ -326,7 +333,6 @@
                     let sAct = tData.sellos || 0; 
                     let exp = (premio.vigenciaFin && hoy > premio.vigenciaFin); 
                     let cod = tData.codigoRedencion;
-                    // NUEVO: Renderizar el ícono dinámico en lugar de la estrella hardcodeada
                     let hS = ''; for(let i=0; i<premio.sellosRequeridos; i++) hS += i < sAct ? `<div class="stamp filled">${iconoSellos}</div>` : '<div class="stamp"></div>';
                     let comp = sAct >= premio.sellosRequeridos;
                     
